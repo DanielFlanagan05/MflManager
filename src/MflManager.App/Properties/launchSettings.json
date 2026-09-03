@@ -1,0 +1,10 @@
+{
+  "profiles": {
+    "MflManager.App (Package)": {
+      "commandName": "MsixPackage"
+    },
+    "MflManager.App (Unpackaged)": {
+      "commandName": "Project"
+    }
+  }
+}

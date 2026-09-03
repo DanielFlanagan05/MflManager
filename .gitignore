@@ -1,0 +1,18 @@
+bin/
+obj/
+.vs/
+*.user
+*.suo
+*.db
+*.db-shm
+*.db-wal
+AppPackages/
+TestResults/
+artifacts/
+*.pfx
+*.cer
+*.msix
+*.msixbundle
+
+# Development certificate
+devcert.pfx

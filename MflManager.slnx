@@ -1,0 +1,18 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/MflManager.AgentCli/MflManager.AgentCli.csproj" />
+    <Project Path="src/MflManager.AgentServer/MflManager.AgentServer.csproj" />
+    <Project Path="src/MflManager.App/MflManager.App.csproj" />
+    <Project Path="src/MflManager.Application/MflManager.Application.csproj" />
+    <Project Path="src/MflManager.Domain/MflManager.Domain.csproj" />
+    <Project Path="src/MflManager.MflApi/MflManager.MflApi.csproj" />
+    <Project Path="src/MflManager.Persistence/MflManager.Persistence.csproj" />
+    <Project Path="src/MflManager.Terminal/MflManager.Terminal.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/MflManager.ContractTests/MflManager.ContractTests.csproj" />
+    <Project Path="tests/MflManager.IntegrationTests/MflManager.IntegrationTests.csproj" />
+    <Project Path="tests/MflManager.UiTests/MflManager.UiTests.csproj" />
+    <Project Path="tests/MflManager.UnitTests/MflManager.UnitTests.csproj" />
+  </Folder>
+</Solution>

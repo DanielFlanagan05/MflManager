@@ -1,0 +1,17 @@
+{
+  "league": {"name":"Sample League","startWeek":"1","endWeek":"18","rosterSize":"24","injuredReserve":"2","taxiSquad":"3"},
+  "franchises": {"franchise":[{"id":"0001","name":"Team One","abbrev":"ONE"},{"id":"0002","name":"Team Two","abbrev":"TWO"}]},
+  "rosters": {"franchise":[{"id":"0001","player":[{"id":"p1","status":"ROSTER","salary":"10","contractYear":"2"}]}]},
+  "weeklyResults": {"matchup":{"week":"1","franchise":[{"id":"0001","name":"Team One","score":"101.5"},{"id":"0002","name":"Team Two","score":"99"}],"status":"FINAL"}},
+  "leagueStandings": {"franchise":[{"id":"0001","name":"Team One","h2hw":"1","h2hl":"0","h2ht":"0","pf":"101.5","rank":"1"}]},
+  "players": {"player":[{"id":"p1","name":"Doe, Jane","position":"TM WR DET","team":"DET","status":"A"},{"id":"p2","name":"Smith, Joe","position":"C","team":"DET"}]},
+  "freeAgents": {"player":{"id":"p3","name":"Runner, Ray","position":"RB","team":"GB"}},
+  "adp": {"adp":{"player":[{"id":"p1","averagePick":"2.5"},{"id":"p3","averagePick":"7"}]}},
+  "transactions": {"transaction":{"id":"t1","timestamp":"2026-09-01T12:00:00Z","type":"ADD","description":"Added player","franchise":"0001"}},
+  "pendingWaivers": {"waiverRequest":{"id":"w1","add":"p3","drop":"0000","priority":"1","bid":"5","conditional":"0"}},
+  "pendingTrades": {"trade":{"id":"tr1","from":"0001","to":"0002","willGiveUp":"p1","willReceive":"p3","comments":"sample","expires":"2026-09-10T00:00:00Z"}},
+  "draftResults": {"draftResults":{"franchiseOnTheClock":"0001","draftUnit":{"unit":"LEAGUE","draftPick":{"round":"1","pick":"1","overallPickNumber":"1","franchise":"0002","player":"p3","comments":"sample"}}}},
+  "myDraftList": {"myDraftList":{"player":[{"id":"p1"},"p3"]}},
+  "lineup": {"player":[{"id":"p1","position":"WR","status":"starter"},{"id":"p3","position":"RB","isStarter":"0"}]},
+  "mutation": {"status":"OK"}
+}

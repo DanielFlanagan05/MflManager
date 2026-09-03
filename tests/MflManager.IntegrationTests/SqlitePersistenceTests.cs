@@ -1,0 +1,38 @@
+using MflManager.Domain;
+using MflManager.Persistence;
+using Microsoft.Data.Sqlite;
+
+namespace MflManager.IntegrationTests;
+
+public sealed class SqlitePersistenceTests : IAsyncLifetime
+{
+    private readonly string _path = Path.Combine(Path.GetTempPath(), "mfl-manager-tests", Guid.NewGuid().ToString("N") + ".db");
+    public Task InitializeAsync() => Task.CompletedTask;
+
+    [Fact]
+    public async Task SnapshotAndJournal_RoundTripWithoutSecrets()
+    {
+        var database = new SqliteDatabase(new(_path));
+        var snapshots = new SqliteSnapshotStore(database);
+        var journal = new SqliteOperationJournal(database);
+        var context = new LeagueContext("12345", SeasonContext.Current(2026), new Uri("https://www73.myfantasyleague.com"), "0001");
+        var snapshot = new LeagueSnapshot { Context = context, CapturedAt = DateTimeOffset.UtcNow, Players = [new("1", "Test Player", "RB", "DET")] };
+        await snapshots.SaveAsync(snapshot, CancellationToken.None);
+        var loaded = await snapshots.GetAsync(context, CancellationToken.None);
+        Assert.Equal("Test Player", Assert.Single(loaded!.Players).Name);
+
+        var entry = new OperationJournalEntry(Guid.NewGuid(), DateTimeOffset.UtcNow, "12345", "0001", MutationKind.AddDrop, "{\"ADD\":\"1\"}", true, "Accepted", true);
+        await journal.AppendAsync(entry, CancellationToken.None);
+        var recent = await journal.GetRecentAsync("12345", 10, CancellationToken.None);
+        Assert.Equal(entry.OperationId, Assert.Single(recent).OperationId);
+        Assert.DoesNotContain("PASSWORD", recent[0].SanitizedRequestJson, StringComparison.OrdinalIgnoreCase);
+        Assert.DoesNotContain("MFL_USER_ID", recent[0].SanitizedRequestJson, StringComparison.OrdinalIgnoreCase);
+    }
+
+    public Task DisposeAsync()
+    {
+        SqliteConnection.ClearAllPools();
+        foreach (var suffix in new[] { string.Empty, "-shm", "-wal" }) { var file = _path + suffix; if (File.Exists(file)) File.Delete(file); }
+        return Task.CompletedTask;
+    }
+}

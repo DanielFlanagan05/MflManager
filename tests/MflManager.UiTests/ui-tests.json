@@ -1,0 +1,14 @@
+{
+  "app": "src/MflManager.App/MflManager.App.csproj",
+  "scenarios": [
+    "open sign-in dialog and cancel without persisting password",
+    "select a league and observe full-refresh status",
+    "navigate every NavigationView item with keyboard",
+    "filter current view through GlobalPlayerSearch",
+    "invoke Ctrl+R, Ctrl+K, F5, and Ctrl+Shift+A",
+    "verify Light, Dark, and High Contrast legibility and focus indicators",
+    "start, stop, and restart the Codex Luna terminal",
+    "execute a preview agent mutation and verify visible action history",
+    "simulate partial refresh and verify stale-data message"
+  ]
+}
