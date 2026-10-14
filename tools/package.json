@@ -1,0 +1,6 @@
+{
+  "private": true,
+  "type": "module",
+  "dependencies": { "playwright": "*" },
+  "scripts": { "test": "node --test ffb-qb-rankings-extractor.test.mjs" }
+}

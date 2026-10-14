@@ -16,10 +16,24 @@ public sealed class SqlitePersistenceTests : IAsyncLifetime
         var snapshots = new SqliteSnapshotStore(database);
         var journal = new SqliteOperationJournal(database);
         var context = new LeagueContext("12345", SeasonContext.Current(2026), new Uri("https://www73.myfantasyleague.com"), "0001");
-        var snapshot = new LeagueSnapshot { Context = context, CapturedAt = DateTimeOffset.UtcNow, Players = [new("1", "Test Player", "RB", "DET")] };
+        var snapshot = new LeagueSnapshot
+        {
+            Context = context,
+            CapturedAt = DateTimeOffset.UtcNow,
+            Players = [new("1", "Test Player", "RB", "DET")],
+            WeeklyPlayerPoints = new Dictionary<string, decimal> { ["1"] = 12.75m },
+            WeeklyPlayerPointsWeek = 2,
+            NflByeWeeks = new Dictionary<string, int> { ["DET"] = 5 },
+            FreeAgentCopies = new Dictionary<string, int> { ["1"] = 2 }
+        };
         await snapshots.SaveAsync(snapshot, CancellationToken.None);
         var loaded = await snapshots.GetAsync(context, CancellationToken.None);
         Assert.Equal("Test Player", Assert.Single(loaded!.Players).Name);
+        Assert.Equal(12.75m, loaded.WeeklyPlayerPoints["1"]);
+        Assert.True(loaded.HasPointsForWeek(2));
+        Assert.False(loaded.HasPointsForWeek(3));
+        Assert.Equal(2, loaded.FreeAgentCopies["1"]);
+        Assert.Equal(5, loaded.NflByeWeeks["DET"]);
 
         var entry = new OperationJournalEntry(Guid.NewGuid(), DateTimeOffset.UtcNow, "12345", "0001", MutationKind.AddDrop, "{\"ADD\":\"1\"}", true, "Accepted", true);
         await journal.AppendAsync(entry, CancellationToken.None);

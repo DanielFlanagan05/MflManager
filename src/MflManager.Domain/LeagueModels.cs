@@ -48,7 +48,7 @@ public sealed record Player(
     decimal? ProjectedPoints = null,
     decimal? AverageDraftPosition = null);
 
-public sealed record FantasyProsRanking(string PlayerName, string Team, string Position, int Rank, int? Tier = null);
+public sealed record PlayerRanking(string PlayerName, string Team, string Position, int PositionRank, string Opponent = "", string Venue = "");
 
 public sealed record RosterPlayer(
     Player Player,
@@ -57,6 +57,30 @@ public sealed record RosterPlayer(
     int? ContractYear = null);
 
 public sealed record LineupSlot(string Position, string? PlayerId, bool IsStarter, bool IsTiebreaker = false);
+
+public sealed record LineupPositionRule(string Position, int Minimum, int Maximum);
+
+public sealed record WeeklyLineup(
+    int Week,
+    IReadOnlyList<string> StarterPlayerIds,
+    IReadOnlyDictionary<string, decimal> PlayerPoints);
+
+public sealed record MflWeekStatus(
+    int LineupWeek,
+    int CurrentWeek,
+    int UpcomingWeek,
+    int CompletedWeek,
+    int LiveScoringWeek)
+{
+    public int ActiveLineupWeek => CurrentWeek > CompletedWeek
+        ? CurrentWeek
+        : LineupWeek > 0 ? LineupWeek : UpcomingWeek;
+}
+
+public sealed record PlayerRosterAvailability(string PlayerId, bool IsFreeAgent, bool CannotAdd, bool IsLocked)
+{
+    public bool CanAdd => IsFreeAgent && !CannotAdd && !IsLocked;
+}
 
 public sealed record Standing(
     string FranchiseId,
@@ -82,7 +106,12 @@ public sealed record Transaction(
     DateTimeOffset Timestamp,
     string Type,
     string Description,
-    string? FranchiseId = null);
+    string? FranchiseId = null)
+{
+    public IReadOnlyList<string> AcquiredPlayerIds { get; init; } = [];
+    public IReadOnlyList<string> DroppedPlayerIds { get; init; } = [];
+    public decimal? BidAmount { get; init; }
+}
 
 public sealed record WaiverClaim(
     string? Id,
@@ -90,7 +119,8 @@ public sealed record WaiverClaim(
     string? DropPlayerId,
     int Priority,
     decimal? BidAmount = null,
-    bool IsConditional = false);
+    bool IsConditional = false,
+    int Round = 1);
 
 public enum TradeAssetKind { Player, DraftPick, BlindBidDollars }
 
@@ -124,7 +154,17 @@ public sealed record LeagueSettings(
     int RosterSize,
     int InjuredReserveSize,
     int TaxiSquadSize,
-    IReadOnlyDictionary<string, string> Values);
+    IReadOnlyDictionary<string, string> Values,
+    int StarterCount = 0,
+    int CurrentWeek = 0,
+    IReadOnlyList<LineupPositionRule>? StartingPositions = null)
+{
+    public IReadOnlyList<LineupPositionRule> LineupRules => StartingPositions ?? [];
+    public int RostersPerPlayer => Values.TryGetValue("rostersPerPlayer", out var value) &&
+        int.TryParse(value, System.Globalization.NumberStyles.Integer, System.Globalization.CultureInfo.InvariantCulture, out var copies)
+            ? copies : 0;
+    public string PlayerLimitUnit => Values.GetValueOrDefault("playerLimitUnit", string.Empty);
+}
 
 public enum SnapshotSection
 {
@@ -149,26 +189,46 @@ public enum SnapshotSection
     Messages,
     Polls,
     Calendar,
-    NflSchedule
+    NflSchedule,
+    Injuries,
+    NflByeWeeks
 }
 
 public sealed record SectionState(bool IsStale, DateTimeOffset? UpdatedAt, string? Error = null);
 
 public sealed record LeagueSnapshot
 {
+    public IReadOnlyDictionary<string, int> NflByeWeeks { get; init; } = new Dictionary<string, int>();
+    public int RankingWeek { get; init; }
+    public int LineupWeek { get; init; }
+    public bool AvailablePlayersReady { get; init; }
+    public bool WeeklyRankingsReady { get; init; }
+    public bool RankingsStale { get; init; }
+    public string RankingSource { get; init; } = string.Empty;
+    public string? AvailablePlayersError { get; init; }
     public required LeagueContext Context { get; init; }
     public required DateTimeOffset CapturedAt { get; init; }
     public LeagueSettings? Settings { get; init; }
     public IReadOnlyList<Franchise> Franchises { get; init; } = [];
     public IReadOnlyList<RosterPlayer> Roster { get; init; } = [];
     public IReadOnlyList<LineupSlot> Lineup { get; init; } = [];
+    // Separate provenance: LineupWeek can advance while last-good scores remain cached.
+    // Older snapshots deserialize to zero and must be revalidated before displaying scores.
+    public int WeeklyPlayerPointsWeek { get; init; }
+    public IReadOnlyDictionary<string, decimal> WeeklyPlayerPoints { get; init; } =
+        new ReadOnlyDictionary<string, decimal>(new Dictionary<string, decimal>());
+    public bool HasPointsForWeek(int week) => week > 0 && WeeklyPlayerPointsWeek == week;
     public IReadOnlyList<Standing> Standings { get; init; } = [];
     public IReadOnlyList<Matchup> Matchups { get; init; } = [];
     public IReadOnlyList<Player> Players { get; init; } = [];
     public IReadOnlyList<Player> FreeAgents { get; init; } = [];
-    public IReadOnlyList<FantasyProsRanking> Rankings { get; init; } = [];
+    public IReadOnlyDictionary<string, int> FreeAgentCopies { get; init; } =
+        new ReadOnlyDictionary<string, int>(new Dictionary<string, int>());
+    public IReadOnlyList<PlayerRanking> Rankings { get; init; } = [];
     public IReadOnlyList<Transaction> Transactions { get; init; } = [];
     public IReadOnlyList<WaiverClaim> Waivers { get; init; } = [];
+    public DateTimeOffset? NextWaiverProcessingAt { get; init; }
+    public decimal? FaabBalance { get; init; }
     public IReadOnlyList<PendingTrade> Trades { get; init; } = [];
     public DraftState? Draft { get; init; }
     public IReadOnlyDictionary<SnapshotSection, SectionState> Sections { get; init; } =

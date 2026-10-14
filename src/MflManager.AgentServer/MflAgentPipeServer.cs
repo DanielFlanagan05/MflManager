@@ -24,18 +24,25 @@ public sealed class MflAgentPipeServer(string pipeName, MflToolRegistry tools) :
     {
         while (!cancellationToken.IsCancellationRequested)
         {
-            await using var pipe = new NamedPipeServerStream(PipeName, PipeDirection.InOut, 1, PipeTransmissionMode.Byte,
-                PipeOptions.Asynchronous | PipeOptions.CurrentUserOnly);
-            await pipe.WaitForConnectionAsync(cancellationToken).ConfigureAwait(false);
-            using var reader = new StreamReader(pipe, Encoding.UTF8, false, 4096, true);
-            await using var writer = new StreamWriter(pipe, new UTF8Encoding(false), 4096, true) { AutoFlush = true };
-            while (pipe.IsConnected && !cancellationToken.IsCancellationRequested)
+            try
             {
-                var line = await reader.ReadLineAsync(cancellationToken).ConfigureAwait(false);
-                if (line is null) break;
-                var response = await HandleAsync(line, cancellationToken).ConfigureAwait(false);
-                await writer.WriteLineAsync(response.AsMemory(), cancellationToken).ConfigureAwait(false);
+                await using var pipe = new NamedPipeServerStream(PipeName, PipeDirection.InOut, 1, PipeTransmissionMode.Byte,
+                    PipeOptions.Asynchronous | PipeOptions.CurrentUserOnly);
+                await pipe.WaitForConnectionAsync(cancellationToken).ConfigureAwait(false);
+                using var reader = new StreamReader(pipe, Encoding.UTF8, false, 4096, true);
+                await using var writer = new StreamWriter(pipe, new UTF8Encoding(false), 4096, true) { AutoFlush = true };
+                while (pipe.IsConnected && !cancellationToken.IsCancellationRequested)
+                {
+                    var line = await reader.ReadLineAsync(cancellationToken).ConfigureAwait(false);
+                    if (line is null) break;
+                    var request = JsonNode.Parse(line);
+                    if (request is JsonObject && request["id"] is null) continue;
+                    var response = await HandleAsync(line, cancellationToken).ConfigureAwait(false);
+                    await writer.WriteLineAsync(response.AsMemory(), cancellationToken).ConfigureAwait(false);
+                }
             }
+            catch (IOException) { /* Also cover reader/writer disposal after disconnect. */ }
+            catch (JsonException) { /* Discard malformed client connections. */ }
         }
     }
 

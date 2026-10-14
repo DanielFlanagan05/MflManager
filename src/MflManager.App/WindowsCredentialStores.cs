@@ -1,5 +1,6 @@
 using MflManager.Application;
 using System.Runtime.InteropServices;
+using System.Security.Cryptography;
 using System.Text;
 using Windows.Security.Credentials;
 
@@ -30,18 +31,35 @@ public sealed class WindowsCredentialLoginStore
 
     private static (string Username, string Password)? LoadGenericCredential()
     {
-        if (!CredRead(Resource, CredentialTypeGeneric, 0, out var pointer)) return null;
+        var credential = WindowsGenericCredentialReader.Load(Resource);
+        return credential is null || string.IsNullOrWhiteSpace(credential.Value.Username)
+            ? null
+            : (credential.Value.Username, credential.Value.Password);
+    }
+}
+
+internal static class WindowsGenericCredentialReader
+{
+    public static (string? Username, string Password)? Load(string resource)
+    {
+        if (!CredRead(resource, CredentialTypeGeneric, 0, out var pointer)) return null;
+        byte[]? passwordBytes = null;
         try
         {
             var credential = Marshal.PtrToStructure<NativeCredential>(pointer);
             if (credential.CredentialBlobSize == 0 || credential.CredentialBlob == IntPtr.Zero) return null;
-            var username = Marshal.PtrToStringUni(credential.UserName);
-            var passwordBytes = new byte[checked((int)credential.CredentialBlobSize)];
+            passwordBytes = new byte[checked((int)credential.CredentialBlobSize)];
             Marshal.Copy(credential.CredentialBlob, passwordBytes, 0, passwordBytes.Length);
-            var password = Encoding.Unicode.GetString(passwordBytes);
-            return string.IsNullOrWhiteSpace(username) || string.IsNullOrWhiteSpace(password) ? null : (username, password);
+            var password = Encoding.Unicode.GetString(passwordBytes).TrimEnd('\0');
+            return string.IsNullOrWhiteSpace(password)
+                ? null
+                : (Marshal.PtrToStringUni(credential.UserName), password);
         }
-        finally { CredFree(pointer); }
+        finally
+        {
+            if (passwordBytes is not null) CryptographicOperations.ZeroMemory(passwordBytes);
+            CredFree(pointer);
+        }
     }
 
     private const uint CredentialTypeGeneric = 1;

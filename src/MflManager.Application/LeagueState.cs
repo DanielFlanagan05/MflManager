@@ -29,7 +29,7 @@ public sealed class LeagueState : ILeagueState
     {
         lock (_gate)
         {
-            if (_selectedLeague is not null && _selectedLeague.LeagueId != snapshot.Context.LeagueId)
+            if (_selectedLeague != snapshot.Context)
                 return;
             _snapshot = snapshot;
         }
@@ -43,7 +43,7 @@ public sealed class ConfirmationPolicy : IConfirmationPolicy
 
     public bool RequiresConfirmation(MutationKind kind) => !_disabled.Contains(kind) && kind is
         MutationKind.SubmitDraftPick or MutationKind.AddDrop or MutationKind.SubmitWaivers or
-        MutationKind.SubmitBlindBids or MutationKind.ProposeTrade or MutationKind.RespondToTrade or
+        MutationKind.SubmitBlindBids or MutationKind.CancelWaiverClaim or MutationKind.ReorderWaiverClaims or MutationKind.EditWaiverClaim or MutationKind.ProposeTrade or MutationKind.RespondToTrade or
         MutationKind.CommissionerDraftControl or MutationKind.CommissionerAdjustment;
 
     public void SetEnabled(MutationKind kind, bool enabled)

@@ -16,6 +16,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Content Include="..\..\tools\ffb-*.mjs;..\..\tools\run-ffb-rankings.mjs" Link="tools\%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
     <Content Include="Assets\SplashScreen.scale-200.png" />
     <Content Include="Assets\LockScreenLogo.scale-200.png" />
     <Content Include="Assets\Square150x150Logo.scale-200.png" />
@@ -24,6 +25,7 @@
     <Content Include="Assets\Square44x44Logo.targetsize-48_altform-lightunplated.png" />
     <Content Include="Assets\StoreLogo.png" />
     <Content Include="Assets\AppIcon.ico" />
+    <Content Include="Assets\TrashIcon.jpg" />
     <Content Include="Assets\Wide310x150Logo.scale-200.png" />
   </ItemGroup>
 
@@ -63,6 +65,7 @@
     <ProjectReference Include="..\MflManager.Persistence\MflManager.Persistence.csproj" />
     <ProjectReference Include="..\MflManager.Terminal\MflManager.Terminal.csproj" />
     <ProjectReference Include="..\MflManager.AgentServer\MflManager.AgentServer.csproj" />
+    <ProjectReference Include="..\MflManager.AgentCli\MflManager.AgentCli.csproj" />
   </ItemGroup>
 
   <!--

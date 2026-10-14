@@ -8,6 +8,8 @@ Status reflects this repository on 2026-09-01. “Typed” means the shared clie
 | League | `league` | read | owner | L | JSON/XML | Dashboard, League | `mfl_get_league_settings` | typed | yes |
 | League | `rules`, `allRules` | read | owner/public | L for rules | JSON/XML | League | `mfl_get_league_settings` | typed | fixture |
 | League | `rosters` | read | owner | L, optional W/FRANCHISE | JSON/XML | My Team | `mfl_get_roster` | typed | yes |
+| Team advice | cached roster, lineup rules, injuries and `nflByeWeeks` | read | owner/public | explicit league_id, optional week | JSON | Luna | `mfl_get_team_needs`; week-aware `mfl_get_roster` | typed, slots/statuses/bench alternatives/freshness | unit/tool contract |
+| League | `playerRosterStatus` | read | owner | L, P, optional W/F | JSON/XML | My Team | `mfl_get_lineup` | typed | yes |
 | League | `freeAgents` | read | owner | L, optional POSITION | JSON/XML | Players | `mfl_get_free_agents` | typed | yes |
 | League | `schedule`, `weeklyResults` | read | owner | L, optional W/F | JSON/XML | Matchups | `mfl_get_matchups` | typed | fixture |
 | League | `leagueStandings` | read | owner | L | JSON/XML | Standings | `mfl_get_standings` | typed | yes |
@@ -17,7 +19,7 @@ Status reflects this repository on 2026-09-01. “Typed” means the shared clie
 | Transactions | `pendingTrades` | read | owner | L, optional FRANCHISE_ID | JSON/XML | Trades | `mfl_get_pending_trades` | typed | fixture |
 | Transactions | `tradeBait` | read | owner | L | JSON/XML | Trades | — | typed capability | fixture |
 | Players | `players` | read | public | optional PLAYERS/SINCE/DETAILS | JSON/XML | Players | `mfl_search_players` | typed/cache | yes |
-| Players | `injuries`, `playerRanks`, `projectedScores` | read | public/owner | week/position variants | JSON/XML | Players | search result enrichment | typed capability | fixture |
+| Players | `injuries`, `playerRanks`, `projectedScores` | read | public/owner | week/position variants | JSON/XML | My Team status; Players | search result enrichment | typed capability | fixture |
 | Players | `adp`, `aav`, `topAdds`, `topDrops`, `topOwns`, `topStarters` | read | public | period/scoring/team count | JSON/XML | Players | search result enrichment | typed capability | fixture |
 | NFL | `nflSchedule`, `mfl_status`, `nfl_sched` | read | public | season/week | JSON/XML/static | Matchups | dashboard | typed capability | fixture |
 | Draft | `draftResults`, `auctionResults` | read | owner | L | JSON/XML | Draft | `mfl_get_draft_state` | typed | yes |

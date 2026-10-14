@@ -18,7 +18,7 @@ public sealed class MflToolRegistry(
         "mfl_get_free_agents", "mfl_set_lineup", "mfl_add_drop", "mfl_submit_waiver_claims", "mfl_submit_blind_bids",
         "mfl_move_to_ir", "mfl_move_from_ir", "mfl_promote_taxi_player", "mfl_demote_taxi_player", "mfl_get_draft_state",
         "mfl_set_draft_queue", "mfl_submit_draft_pick", "mfl_get_pending_trades", "mfl_propose_trade", "mfl_respond_to_trade",
-        "mfl_get_capabilities"
+        "mfl_get_capabilities", "mfl_get_rankings", "mfl_get_team_needs"
     ];
 
     public JsonObject ListTools() => new()
@@ -26,13 +26,26 @@ public sealed class MflToolRegistry(
         ["tools"] = new JsonArray(ToolNames.Select(name => (JsonNode)new JsonObject
         {
             ["name"] = name,
-            ["description"] = name.Replace("mfl_", string.Empty, StringComparison.Ordinal).Replace('_', ' '),
+            ["description"] = name switch
+            {
+                "mfl_get_free_agents" => "Search available free agents. Optional query matches name, position or NFL team. Returns up to 100 matches, NOT the total pool size; narrow by position when recommending players.",
+                "mfl_get_roster" => "Read owned players with injury, roster/IR/taxi status, bye week, combined availability status and availability risk for optional week (default active league week). Missing bye/injury data does not prove availability; inspect freshness using mfl_get_team_needs.",
+                "mfl_get_team_needs" => "Read required starting slots, submitted lineup coverage, roster availability including BYE and injury/status risks, owned alternatives and freshness for optional week (default active league week). A different week's submitted lineup is unknown, not empty. Read before pickup or lineup advice.",
+                _ => name.Replace("mfl_", string.Empty, StringComparison.Ordinal).Replace('_', ' ')
+            },
+            ["annotations"] = new JsonObject
+            {
+                ["readOnlyHint"] = IsReadOnly(name),
+                ["destructiveHint"] = !IsReadOnly(name),
+                ["openWorldHint"] = false
+            },
             ["inputSchema"] = new JsonObject
             {
                 ["type"] = "object",
                 ["properties"] = new JsonObject
                 {
                     ["league_id"] = new JsonObject { ["type"] = "string", ["description"] = "Explicit MFL league id." },
+                    ["week"] = new JsonObject { ["type"] = "integer", ["description"] = "Requested fantasy week; roster and team-needs reads default to the active league week." },
                     ["preview"] = new JsonObject { ["type"] = "boolean", ["default"] = true },
                     ["confirmed"] = new JsonObject { ["type"] = "boolean", ["default"] = false }
                 },
@@ -40,6 +53,9 @@ public sealed class MflToolRegistry(
             }
         }).ToArray())
     };
+
+    public static bool IsReadOnly(string name) => name.StartsWith("mfl_get_", StringComparison.Ordinal) ||
+        name is "mfl_list_leagues" or "mfl_search_players" or "mfl_refresh_all";
 
     public async Task<JsonNode> CallAsync(string name, JsonObject args, CancellationToken cancellationToken)
     {
@@ -55,7 +71,10 @@ public sealed class MflToolRegistry(
             "mfl_get_league_settings" => Content(snapshot?.Settings),
             "mfl_get_standings" => Content(snapshot?.Standings ?? []),
             "mfl_get_matchups" => Content(snapshot?.Matchups ?? []),
-            "mfl_get_roster" => Content(snapshot?.Roster ?? []),
+            "mfl_get_roster" => Content(snapshot is null ? [] : TeamNeeds.RosterForWeek(snapshot, RequestedWeek(args, snapshot))),
+            "mfl_get_team_needs" => Content(TeamNeeds.Build(snapshot ?? throw new InvalidOperationException("Refresh league data before reading team needs."), RequestedWeek(args, snapshot))),
+            "mfl_get_rankings" => Content(new { snapshot?.RankingWeek, snapshot?.RankingSource,
+                snapshot?.WeeklyRankingsReady, snapshot?.RankingsStale, snapshot?.Rankings, snapshot?.CapturedAt }),
             "mfl_get_lineup" => Content(snapshot?.Lineup ?? []),
             "mfl_search_players" => Content(Search(snapshot?.Players ?? [], Required(args, "query"))),
             "mfl_get_free_agents" => Content(Search(snapshot?.FreeAgents ?? [], Optional(args, "query") ?? string.Empty)),
@@ -109,6 +128,13 @@ public sealed class MflToolRegistry(
     private static string Required(JsonObject args, string name) => Optional(args, name) ?? throw new ArgumentException($"'{name}' is required.");
     private static string? Optional(JsonObject args, string name) => args[name]?.GetValue<string>();
     private static int Int(JsonObject args, string name) => args[name]?.GetValue<int>() ?? throw new ArgumentException($"'{name}' is required.");
+    private static int RequestedWeek(JsonObject args, LeagueSnapshot? snapshot)
+    {
+        var week = args["week"]?.GetValue<int>() ?? (snapshot is null ? 0 : LineupRules.ActiveWeek(snapshot));
+        if (week < (snapshot?.Settings?.StartWeek ?? 1) || week > (snapshot?.Settings?.EndWeek ?? 18))
+            throw new ArgumentException("Week is outside the selected league's season.");
+        return week;
+    }
     private static IReadOnlyList<string> Strings(JsonObject args, string name) => (args[name] as JsonArray ?? []).Select(x => x?.GetValue<string>() ?? string.Empty).Where(x => x.Length > 0).ToArray();
     private static JsonObject Content(object? value) => new() { ["content"] = new JsonArray(new JsonObject { ["type"] = "text", ["text"] = JsonSerializer.Serialize(value, new JsonSerializerOptions(JsonSerializerDefaults.Web) { WriteIndented = true }) }), ["isError"] = false };
 }

@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<UserControl
+    x:Class="MflManager.App.Views.TeamView"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:application="using:MflManager.Application">
+    <Grid RowSpacing="12">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+        <Grid ColumnSpacing="12">
+            <Grid.ColumnDefinitions><ColumnDefinition Width="Auto" /><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+            <Button AutomationProperties.AutomationId="TeamViewBackButton" AutomationProperties.Name="{x:Bind ViewModel.BackLabel, Mode=OneWay}" Click="Back_Click">
+                <StackPanel Orientation="Horizontal" Spacing="8">
+                    <SymbolIcon Symbol="Back" />
+                    <TextBlock Text="{x:Bind ViewModel.BackLabel, Mode=OneWay}" />
+                </StackPanel>
+            </Button>
+            <TextBlock Grid.Column="1" VerticalAlignment="Center" Foreground="{ThemeResource AppSecondaryBrush}" Text="{x:Bind ViewModel.Status, Mode=OneWay}" TextWrapping="Wrap" />
+            <ProgressRing Grid.Column="2" Width="24" Height="24" IsActive="{x:Bind ViewModel.IsLoading, Mode=OneWay}" />
+        </Grid>
+        <InfoBar Grid.Row="1" AutomationProperties.AutomationId="TeamViewLoadError" IsOpen="{x:Bind ViewModel.IsErrorOpen, Mode=TwoWay}" Message="{x:Bind ViewModel.Error, Mode=OneWay}" Severity="Error" Title="Team unavailable" />
+        <ScrollViewer Grid.Row="2" AutomationProperties.AutomationId="TeamViewScrollViewer" VerticalScrollBarVisibility="Auto" VerticalScrollMode="Enabled">
+            <StackPanel Spacing="24">
+                <StackPanel Spacing="8">
+                    <TextBlock Text="Starting lineup" Style="{StaticResource SubtitleTextBlockStyle}" />
+                    <Grid Padding="12,4" ColumnSpacing="16">
+                        <Grid.ColumnDefinitions><ColumnDefinition Width="120" /><ColumnDefinition Width="2*" /><ColumnDefinition Width="*" /><ColumnDefinition Width="*" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions>
+                        <TextBlock Text="Slot" Style="{StaticResource BodyStrongTextBlockStyle}" />
+                        <TextBlock Grid.Column="1" Text="Player" Style="{StaticResource BodyStrongTextBlockStyle}" />
+                        <TextBlock Grid.Column="2" Text="Position" Style="{StaticResource BodyStrongTextBlockStyle}" />
+                        <TextBlock Grid.Column="3" Text="NFL team" Style="{StaticResource BodyStrongTextBlockStyle}" />
+                        <TextBlock Grid.Column="4" Text="Current week points" Style="{StaticResource BodyStrongTextBlockStyle}" />
+                    </Grid>
+                    <ItemsControl AutomationProperties.AutomationId="TeamViewStarters" ItemsSource="{x:Bind ViewModel.Starters, Mode=OneWay}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate x:DataType="application:TeamPlayerRow">
+                                <Grid Padding="12,8" ColumnSpacing="16">
+                                    <Grid.ColumnDefinitions><ColumnDefinition Width="120" /><ColumnDefinition Width="2*" /><ColumnDefinition Width="*" /><ColumnDefinition Width="*" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions>
+                                    <TextBlock Text="{x:Bind Slot, Mode=OneWay}" Style="{StaticResource BodyStrongTextBlockStyle}" />
+                                    <TextBlock Grid.Column="1" Text="{x:Bind DisplayName, Mode=OneWay}" TextTrimming="CharacterEllipsis" />
+                                    <TextBlock Grid.Column="2" Text="{x:Bind Position, Mode=OneWay}" />
+                                    <TextBlock Grid.Column="3" Text="{x:Bind NflTeam, Mode=OneWay}" />
+                                    <TextBlock Grid.Column="4" Text="{x:Bind PointsText, Mode=OneWay}" />
+                                </Grid>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </StackPanel>
+                <StackPanel Spacing="8">
+                    <TextBlock Text="Bench" Style="{StaticResource SubtitleTextBlockStyle}" />
+                    <Grid Padding="12,4" ColumnSpacing="16">
+                        <Grid.ColumnDefinitions><ColumnDefinition Width="2*" /><ColumnDefinition Width="*" /><ColumnDefinition Width="*" /><ColumnDefinition Width="*" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions>
+                        <TextBlock Text="Player" Style="{StaticResource BodyStrongTextBlockStyle}" />
+                        <TextBlock Grid.Column="1" Text="Position" Style="{StaticResource BodyStrongTextBlockStyle}" />
+                        <TextBlock Grid.Column="2" Text="NFL team" Style="{StaticResource BodyStrongTextBlockStyle}" />
+                        <TextBlock Grid.Column="3" Text="Roster status" Style="{StaticResource BodyStrongTextBlockStyle}" />
+                        <TextBlock Grid.Column="4" Text="Current week points" Style="{StaticResource BodyStrongTextBlockStyle}" />
+                    </Grid>
+                    <ItemsControl AutomationProperties.AutomationId="TeamViewBench" ItemsSource="{x:Bind ViewModel.Bench, Mode=OneWay}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate x:DataType="application:TeamPlayerRow">
+                                <Grid Padding="12,8" ColumnSpacing="16">
+                                    <Grid.ColumnDefinitions><ColumnDefinition Width="2*" /><ColumnDefinition Width="*" /><ColumnDefinition Width="*" /><ColumnDefinition Width="*" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions>
+                                    <TextBlock Text="{x:Bind DisplayName, Mode=OneWay}" TextTrimming="CharacterEllipsis" />
+                                    <TextBlock Grid.Column="1" Text="{x:Bind Position, Mode=OneWay}" />
+                                    <TextBlock Grid.Column="2" Text="{x:Bind NflTeam, Mode=OneWay}" />
+                                    <TextBlock Grid.Column="3" Text="{x:Bind RosterStatus, Mode=OneWay}" Foreground="{ThemeResource AppSecondaryBrush}" />
+                                    <TextBlock Grid.Column="4" Text="{x:Bind PointsText, Mode=OneWay}" />
+                                </Grid>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </StackPanel>
+            </StackPanel>
+        </ScrollViewer>
+    </Grid>
+</UserControl>

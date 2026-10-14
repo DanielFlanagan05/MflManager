@@ -2,6 +2,18 @@
 <ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
     <ResourceDictionary.ThemeDictionaries>
         <ResourceDictionary x:Key="Light">
+            <SolidColorBrush x:Key="PlayerNameStarterBackgroundBrush" Color="#FFDFF2DF" />
+            <SolidColorBrush x:Key="PlayerNameStarterForegroundBrush" Color="#FF164B16" />
+            <SolidColorBrush x:Key="PlayerNameBenchBackgroundBrush" Color="#FFDCEEFF" />
+            <SolidColorBrush x:Key="PlayerNameBenchForegroundBrush" Color="#FF123E68" />
+            <StaticResource x:Key="PlayerStatusNeutralBackgroundBrush" ResourceKey="SubtleFillColorSecondaryBrush" />
+            <SolidColorBrush x:Key="PlayerStatusQuestionableBackgroundBrush" Color="#FFFFF2CC" />
+            <SolidColorBrush x:Key="PlayerStatusQuestionableForegroundBrush" Color="#FF594500" />
+            <SolidColorBrush x:Key="PlayerStatusDoubtfulBackgroundBrush" Color="#FFFFE0B2" />
+            <SolidColorBrush x:Key="PlayerStatusDoubtfulForegroundBrush" Color="#FF713600" />
+            <SolidColorBrush x:Key="PlayerStatusUnavailableBackgroundBrush" Color="#FFFDE7E9" />
+            <SolidColorBrush x:Key="PlayerStatusUnavailableForegroundBrush" Color="#FF9F1239" />
+            <StaticResource x:Key="PlayerStatusBorderBrush" ResourceKey="CardStrokeColorDefaultBrush" />
             <SolidColorBrush x:Key="AppSurfaceBrush" Color="#FFF7F9FC" />
             <SolidColorBrush x:Key="AppCardBrush" Color="#FFFFFFFF" />
             <SolidColorBrush x:Key="AppPrimaryBrush" Color="#FF0F6CBD" />
@@ -9,6 +21,18 @@
             <SolidColorBrush x:Key="AppSecondaryBrush" Color="#FF5D6670" />
         </ResourceDictionary>
         <ResourceDictionary x:Key="Dark">
+            <SolidColorBrush x:Key="PlayerNameStarterBackgroundBrush" Color="#FF245C2C" />
+            <SolidColorBrush x:Key="PlayerNameStarterForegroundBrush" Color="#FFFFFFFF" />
+            <SolidColorBrush x:Key="PlayerNameBenchBackgroundBrush" Color="#FF174F7D" />
+            <SolidColorBrush x:Key="PlayerNameBenchForegroundBrush" Color="#FFFFFFFF" />
+            <StaticResource x:Key="PlayerStatusNeutralBackgroundBrush" ResourceKey="SubtleFillColorSecondaryBrush" />
+            <SolidColorBrush x:Key="PlayerStatusQuestionableBackgroundBrush" Color="#FFFFD966" />
+            <SolidColorBrush x:Key="PlayerStatusQuestionableForegroundBrush" Color="#FF392C00" />
+            <SolidColorBrush x:Key="PlayerStatusDoubtfulBackgroundBrush" Color="#FFFFB74D" />
+            <SolidColorBrush x:Key="PlayerStatusDoubtfulForegroundBrush" Color="#FF482300" />
+            <SolidColorBrush x:Key="PlayerStatusUnavailableBackgroundBrush" Color="#FF8C1D28" />
+            <SolidColorBrush x:Key="PlayerStatusUnavailableForegroundBrush" Color="#FFFFFFFF" />
+            <StaticResource x:Key="PlayerStatusBorderBrush" ResourceKey="CardStrokeColorDefaultBrush" />
             <SolidColorBrush x:Key="AppSurfaceBrush" Color="#FF17191C" />
             <SolidColorBrush x:Key="AppCardBrush" Color="#FF23262A" />
             <SolidColorBrush x:Key="AppPrimaryBrush" Color="#FF4CC2FF" />
@@ -16,6 +40,18 @@
             <SolidColorBrush x:Key="AppSecondaryBrush" Color="#FFB1B8C0" />
         </ResourceDictionary>
         <ResourceDictionary x:Key="HighContrast">
+            <StaticResource x:Key="PlayerNameStarterBackgroundBrush" ResourceKey="SystemColorWindowColorBrush" />
+            <StaticResource x:Key="PlayerNameStarterForegroundBrush" ResourceKey="SystemColorWindowTextColorBrush" />
+            <StaticResource x:Key="PlayerNameBenchBackgroundBrush" ResourceKey="SystemColorWindowColorBrush" />
+            <StaticResource x:Key="PlayerNameBenchForegroundBrush" ResourceKey="SystemColorWindowTextColorBrush" />
+            <StaticResource x:Key="PlayerStatusNeutralBackgroundBrush" ResourceKey="SystemColorWindowColorBrush" />
+            <StaticResource x:Key="PlayerStatusQuestionableBackgroundBrush" ResourceKey="SystemColorWindowColorBrush" />
+            <StaticResource x:Key="PlayerStatusQuestionableForegroundBrush" ResourceKey="SystemColorWindowTextColorBrush" />
+            <StaticResource x:Key="PlayerStatusDoubtfulBackgroundBrush" ResourceKey="SystemColorWindowColorBrush" />
+            <StaticResource x:Key="PlayerStatusDoubtfulForegroundBrush" ResourceKey="SystemColorWindowTextColorBrush" />
+            <StaticResource x:Key="PlayerStatusUnavailableBackgroundBrush" ResourceKey="SystemColorWindowColorBrush" />
+            <StaticResource x:Key="PlayerStatusUnavailableForegroundBrush" ResourceKey="SystemColorWindowTextColorBrush" />
+            <StaticResource x:Key="PlayerStatusBorderBrush" ResourceKey="SystemColorWindowTextColorBrush" />
             <StaticResource x:Key="AppSurfaceBrush" ResourceKey="SystemColorWindowColorBrush" />
             <StaticResource x:Key="AppCardBrush" ResourceKey="SystemColorWindowColorBrush" />
             <StaticResource x:Key="AppPrimaryBrush" ResourceKey="SystemColorHotlightColorBrush" />

@@ -2,10 +2,12 @@ using System.Net;
 using System.Net.Http.Headers;
 using System.Text;
 using System.Text.Json.Nodes;
+using System.Text.RegularExpressions;
 using System.Xml.Linq;
 using MflManager.Application;
 using MflManager.Domain;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Logging;
 
 namespace MflManager.MflApi;
@@ -73,15 +75,18 @@ public static class ServiceCollectionExtensions
         services.AddHttpClient("mfl", client => client.Timeout = TimeSpan.FromSeconds(30))
             .AddHttpMessageHandler<CorrelationHandler>()
             .AddHttpMessageHandler<CookieHandler>();
-        services.AddHttpClient("fantasypros", client => client.Timeout = TimeSpan.FromSeconds(20));
         services.AddSingleton<IMflAuthenticationClient, MflAuthenticationClient>();
         services.AddSingleton<IMflLeagueDiscoveryClient, MflLeagueDiscoveryClient>();
         services.AddSingleton<IMflExportClient, MflExportClient>();
+        services.AddSingleton<IMflWaiverDataService, MflWaiverDataService>();
         services.AddSingleton<IMflImportClient, MflImportClient>();
         services.AddSingleton<IMflDraftClient, MflDraftClient>();
-        services.AddSingleton<IFantasyProsRankingClient, FantasyProsRankingClient>();
+        services.AddSingleton<IPlayerRankingClient, RenderedPlayerRankingClient>();
         services.AddSingleton<IMflCapabilityService, MflCapabilityService>();
         services.AddSingleton<IMflRefreshService, MflRefreshService>();
+        services.AddSingleton<IMflLineupQueryService, MflLineupQueryService>();
+        services.AddSingleton<ILeagueRankingsService, MflLeagueRankingsService>();
+        services.AddSingleton<ITeamViewService, MflTeamViewService>();
         services.AddSingleton<IMflMutationCoordinator, MflMutationCoordinator>();
         return services;
     }
@@ -95,6 +100,9 @@ internal static class MflHttpResult
     public static (bool Success, string? Code, string? Message) ParseMutation(string body)
     {
         if (string.IsNullOrWhiteSpace(body)) return (false, "EMPTY_RESPONSE", "MFL returned an empty response.");
+        if (body.TrimStart().StartsWith("<html", StringComparison.OrdinalIgnoreCase) ||
+            body.TrimStart().StartsWith("<!DOCTYPE", StringComparison.OrdinalIgnoreCase))
+            return HtmlRejection(body);
         try
         {
             if (body.TrimStart().StartsWith('{'))
@@ -118,8 +126,19 @@ internal static class MflHttpResult
         catch
         {
             if (body.Contains("error", StringComparison.OrdinalIgnoreCase)) return (false, "MFL_REJECTED", "MFL rejected the request.");
-            return (true, null, "Accepted by MFL.");
+            return (false, "INVALID_RESPONSE", "MFL did not confirm the request.");
         }
+    }
+
+    private static (bool Success, string? Code, string? Message) HtmlRejection(string body)
+    {
+        var plainText = WebUtility.HtmlDecode(Regex.Replace(body, "<[^>]+>", " "));
+        plainText = Regex.Replace(plainText, "\\s+", " ").Trim();
+        var lockMessage = Regex.Match(plainText,
+            "[^.]{0,100}(?:waiver|request)[^.]{0,100}(?:locked|closed|not allowed|cannot|can't)[^.]{0,100}",
+            RegexOptions.IgnoreCase).Value.Trim();
+        return (false, lockMessage.Length > 0 ? "MFL_REJECTED" : "INVALID_RESPONSE",
+            lockMessage.Length > 0 ? lockMessage : "MFL did not confirm the request.");
     }
 
     private static string? FindValue(JsonNode? node, string name)
@@ -161,11 +180,22 @@ public sealed class MflAuthenticationClient(IHttpClientFactory clients, MflSessi
         {
             using var response = await clients.CreateClient("mfl").SendAsync(request, cancellationToken).ConfigureAwait(false);
             var body = await response.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
-            if (!response.IsSuccessStatusCode) return MflResult<AuthenticatedSession>.Failure("Unable to sign in to MFL.", correlationId, status: response.StatusCode);
+            logger.LogInformation("MFL API response login: HTTP {StatusCode}, {ResponseBytes} bytes, correlation {CorrelationId}",
+                (int)response.StatusCode, body.Length, correlationId);
+            if (!response.IsSuccessStatusCode)
+            {
+                logger.LogWarning("MFL login failed with HTTP {StatusCode}, correlation {CorrelationId}",
+                    (int)response.StatusCode, correlationId);
+                return MflResult<AuthenticatedSession>.Failure("Unable to sign in to MFL.", correlationId, status: response.StatusCode);
+            }
             var parsed = MflHttpResult.ParseMutation(body);
             var cookie = cookieJar.FindUserCookie(request.RequestUri!);
             if (!parsed.Success || cookie is null || string.IsNullOrWhiteSpace(cookie.Value))
+            {
+                logger.LogWarning("MFL login response did not establish a session; code {ErrorCode}, correlation {CorrelationId}",
+                    parsed.Code ?? "NO_SESSION_COOKIE", correlationId);
                 return MflResult<AuthenticatedSession>.Failure(parsed.Message ?? "MFL did not issue an authenticated session.", correlationId, parsed.Code, response.StatusCode);
+            }
             return MflResult<AuthenticatedSession>.Success(new(credentials.Username, "stored-in-cookie-jar", DateTimeOffset.UtcNow), correlationId, response.StatusCode);
         }
         catch (Exception ex) when (ex is HttpRequestException or TaskCanceledException)

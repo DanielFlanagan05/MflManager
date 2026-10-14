@@ -8,6 +8,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.2" />
     <PackageReference Include="coverlet.collector" Version="6.0.4" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.14.1" />
     <PackageReference Include="xunit" Version="2.9.3" />
@@ -16,11 +17,16 @@
 
   <ItemGroup>
     <Using Include="Xunit" />
+    <Compile Include="..\..\src\MflManager.App\ViewModels\LineupSelectionEditor.cs" Link="ViewModels\LineupSelectionEditor.cs" />
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\..\src\MflManager.AgentCli\MflManager.AgentCli.csproj" />
+    <ProjectReference Include="..\..\src\MflManager.Persistence\MflManager.Persistence.csproj" />
     <ProjectReference Include="..\..\src\MflManager.Application\MflManager.Application.csproj" />
     <ProjectReference Include="..\..\src\MflManager.Domain\MflManager.Domain.csproj" />
+    <ProjectReference Include="..\..\src\MflManager.Terminal\MflManager.Terminal.csproj" />
+    <ProjectReference Include="..\..\src\MflManager.AgentServer\MflManager.AgentServer.csproj" />
     <ProjectReference Include="..\..\src\MflManager.MflApi\MflManager.MflApi.csproj" />
   </ItemGroup>
 

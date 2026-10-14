@@ -10,6 +10,9 @@
 - Reads use bounded retry; writes never retry automatically because their outcome could be ambiguous.
 - Logs use correlation IDs and exception types, not request bodies, passwords, cookies, or owner PII.
 - Optional 1Password loading invokes the local `op` CLI for only the `username` and `password` fields of the fixed `Myfantasyleague` item; values are held in memory and passed directly to the normal login flow.
+- External positional rankings use public rendered tables without an API key or account cookies. Hidden browser processes are bounded, and logs contain source/count/stale metadata, not HTML or player payloads.
+- Codex authentication is delegated to `codex login`. MFL Manager reads only the authentication type and account email from the official app-server account surface for local UI state; it never reads, copies, logs, or stores Codex/ChatGPT credentials or tokens.
+- Luna runs with a read-only filesystem sandbox and per-process MCP configuration, not a global configuration edit. Only known read tools are pre-approved. Hidden instructions, JSON tool payloads and CLI diagnostic traces are not printed into the user conversation. The bridge retains the current-user pipe boundary; interrupted clients do not shut down the broker.
 - Contract/integration fixtures are synthetic. Live mutations require an explicit test league and `MFL_ALLOW_TEST_MUTATIONS=1`.
 
 Release audit: run tests, search for `PASSWORD`, `MFL_USER_ID`, `Cookie`, and URL construction, inspect the package, and verify no `.db`, `.pfx`, `.cer`, logs, or real MFL payloads are included.

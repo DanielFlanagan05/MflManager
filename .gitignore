@@ -9,6 +9,7 @@ obj/
 AppPackages/
 TestResults/
 artifacts/
+logs/
 *.pfx
 *.cer
 *.msix

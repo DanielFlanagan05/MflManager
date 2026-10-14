@@ -5,7 +5,11 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:local="using:MflManager.App"
     xmlns:viewModels="using:MflManager.App.ViewModels"
-    Background="{ThemeResource AppSurfaceBrush}">
+    xmlns:views="using:MflManager.App.Views"
+    xmlns:application="using:MflManager.Application"
+    xmlns:domain="using:MflManager.Domain"
+    Background="{ThemeResource AppSurfaceBrush}"
+    KeyboardAcceleratorPlacementMode="Hidden">
     <Page.KeyboardAccelerators>
         <KeyboardAccelerator Key="R" Modifiers="Control" Invoked="RefreshAccelerator_Invoked" />
         <KeyboardAccelerator Key="K" Modifiers="Control" Invoked="SearchAccelerator_Invoked" />
@@ -32,24 +36,36 @@
             <NavigationViewItem AutomationProperties.AutomationId="NavWaivers" Content="Waivers" Tag="Waivers" />
             <NavigationViewItem AutomationProperties.AutomationId="NavTrades" Content="Trades" Tag="Trades" />
             <NavigationViewItem AutomationProperties.AutomationId="NavMatchups" Content="Matchups" Tag="Matchups" />
+            <NavigationViewItem AutomationProperties.AutomationId="NavLeagueRankings" Content="League Rankings" Tag="League Rankings" />
             <NavigationViewItem AutomationProperties.AutomationId="NavStandings" Content="Standings" Tag="Standings" />
-            <NavigationViewItem AutomationProperties.AutomationId="NavLeague" Content="League" Tag="League" />
+            <NavigationViewItem AutomationProperties.AutomationId="NavLeague" Content="Transactions" Tag="Transactions" />
             <NavigationViewItem AutomationProperties.AutomationId="NavMessages" Content="Messages" Tag="Messages" />
             <NavigationViewItem AutomationProperties.AutomationId="NavAgent" Content="Agent" Tag="Agent" />
         </NavigationView.MenuItems>
         <Grid Padding="24" RowSpacing="12">
-            <Grid.RowDefinitions><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /><RowDefinition Height="*" /><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /></Grid.RowDefinitions>
+            <Grid.RowDefinitions><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /><RowDefinition Height="*" /><RowDefinition Height="Auto" /></Grid.RowDefinitions>
             <Grid ColumnSpacing="12">
-                <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
                 <StackPanel Spacing="4">
                     <TextBlock Text="{x:Bind ViewModel.PageTitle, Mode=OneWay}" Style="{StaticResource TitleTextBlockStyle}" />
                     <TextBlock Text="{x:Bind ViewModel.PageSubtitle, Mode=OneWay}" Foreground="{ThemeResource AppSecondaryBrush}" />
                 </StackPanel>
-                <ComboBox x:Name="LeagueSelector" Grid.Column="1" AutomationProperties.AutomationId="LeagueSelector" Header="League" ItemsSource="{x:Bind ViewModel.Leagues, Mode=OneWay}" DisplayMemberPath="Name" SelectionChanged="LeagueSelector_SelectionChanged" MinWidth="240" />
+                <TextBlock Grid.Column="1" AutomationProperties.AutomationId="FaabBalance" Text="{x:Bind ViewModel.FaabBalanceText, Mode=OneWay}" VerticalAlignment="Center" />
+                <ComboBox x:Name="LeagueSelector" Grid.Column="2" AutomationProperties.AutomationId="LeagueSelector" Header="League" ItemsSource="{x:Bind ViewModel.Leagues, Mode=OneWay}" DisplayMemberPath="Name" SelectionChanged="LeagueSelector_SelectionChanged" MinWidth="240" />
             </Grid>
             <CommandBar Grid.Row="1" DefaultLabelPosition="Right">
-                <CommandBar.Content><AutoSuggestBox x:Name="GlobalSearch" AutomationProperties.AutomationId="GlobalPlayerSearch" PlaceholderText="Search current view" TextChanged="GlobalSearch_TextChanged" MinWidth="280" /></CommandBar.Content>
-                <AppBarButton AutomationProperties.AutomationId="RefreshAllButton" AutomationProperties.Name="Refresh all league data" Command="{x:Bind ViewModel.RefreshCommand}" Icon="Refresh" Label="Refresh all" />
+                <CommandBar.Content><AutoSuggestBox x:Name="GlobalSearch" AutomationProperties.AutomationId="GlobalPlayerSearch" AutomationProperties.Name="Search current view" PlaceholderText="Search current view" TextChanged="GlobalSearch_TextChanged" MinWidth="280" /></CommandBar.Content>
+                <AppBarElementContainer Visibility="{x:Bind local:MainPage.BoolToVisibility(ViewModel.HasRankingPositionFilter), Mode=OneWay}">
+                    <ComboBox AutomationProperties.AutomationId="RankingPositionFilter" AutomationProperties.Name="Ranking position" ItemsSource="{x:Bind ViewModel.RankingPositions}" SelectedItem="{x:Bind ViewModel.SelectedRankingPosition, Mode=TwoWay}" MinWidth="100" />
+                </AppBarElementContainer>
+                <AppBarElementContainer AutomationProperties.AutomationId="CodexToolbarAccount" Visibility="{x:Bind local:MainPage.BothBoolToVisibility(ViewModel.IsAgentPage, ViewModel.IsCodexAuthenticated), Mode=OneWay}">
+                    <TextBlock AutomationProperties.AutomationId="CodexAccountEmail" Margin="8,0" Text="{x:Bind ViewModel.CodexAccountEmail, Mode=OneWay}" Style="{StaticResource CaptionTextBlockStyle}" VerticalAlignment="Center" />
+                </AppBarElementContainer>
+                <AppBarButton AutomationProperties.AutomationId="RefreshAllButton" AutomationProperties.Name="Refresh all league data" Command="{x:Bind ViewModel.RefreshCommand}" Icon="Refresh" Label="Refresh all" Visibility="{x:Bind local:MainPage.InvertEitherBoolToVisibility(ViewModel.IsLeagueRankingsPage, ViewModel.IsTeamViewPage), Mode=OneWay}">
+                    <ToolTipService.ToolTip>
+                        <ToolTip Content="Refresh all (Ctrl+R or F5)" Placement="Bottom" />
+                    </ToolTipService.ToolTip>
+                </AppBarButton>
                 <AppBarButton AutomationProperties.AutomationId="SignOutButton" Command="{x:Bind ViewModel.SignOutCommand}" Icon="LeaveChat" Label="Sign out" Visibility="{x:Bind local:MainPage.BoolToVisibility(ViewModel.IsSignedIn), Mode=OneWay}" />
                 <AppBarButton AutomationProperties.AutomationId="SignInButton" Click="SignIn_Click" Icon="Contact" Label="Sign in" Visibility="{x:Bind local:MainPage.InvertBoolToVisibility(ViewModel.IsSignedIn), Mode=OneWay}" />
             </CommandBar>
@@ -57,7 +73,7 @@
             <Grid Grid.Row="3" ColumnSpacing="8" Visibility="{x:Bind local:MainPage.BoolToVisibility(ViewModel.IsDraftPage), Mode=OneWay}" AutomationProperties.AutomationId="DraftQueueControls">
                 <Grid.ColumnDefinitions><ColumnDefinition Width="Auto" /><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /><ColumnDefinition Width="Auto" /><ColumnDefinition Width="Auto" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
                 <StackPanel VerticalAlignment="Center"><TextBlock Text="Queue" Style="{StaticResource BodyStrongTextBlockStyle}" /><TextBlock Text="{x:Bind ViewModel.DraftQueueHead, Mode=OneWay}" Foreground="{ThemeResource AppSecondaryBrush}" Style="{StaticResource CaptionTextBlockStyle}" /></StackPanel>
-                <TextBox Grid.Column="1" AutomationProperties.AutomationId="DraftQueuePlayerSearch" PlaceholderText="Add player by name" Text="{x:Bind ViewModel.DraftQueuePlayerSearch, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                <TextBox Grid.Column="1" AutomationProperties.AutomationId="DraftQueuePlayerSearch" AutomationProperties.Name="Add player to draft queue" PlaceholderText="Add player by name" Text="{x:Bind ViewModel.DraftQueuePlayerSearch, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
                 <Button Grid.Column="2" AutomationProperties.AutomationId="AddDraftQueuePlayerButton" Command="{x:Bind ViewModel.AddDraftQueuePlayerCommand}" Content="Add" />
                 <Button Grid.Column="3" AutomationProperties.AutomationId="ViewDraftQueueButton" Content="View queue">
                     <Button.Flyout>
@@ -78,7 +94,7 @@
                 <Button Grid.Column="4" AutomationProperties.AutomationId="SyncDraftQueueButton" Command="{x:Bind ViewModel.SyncDraftQueueCommand}" Content="Sync from MFL" />
                 <Button Grid.Column="5" AutomationProperties.AutomationId="SaveDraftQueueButton" Command="{x:Bind ViewModel.SaveDraftQueueCommand}" Content="Save queue" />
             </Grid>
-            <Grid x:Name="DraftBoardPanel" x:Load="{x:Bind ViewModel.IsDraftPage, Mode=OneWay}" Grid.Row="4" Grid.RowSpan="2" RowSpacing="4" AutomationProperties.AutomationId="DraftBoardPanel">
+            <Grid x:Name="DraftBoardPanel" Visibility="{x:Bind local:MainPage.BoolToVisibility(ViewModel.IsDraftPage), Mode=OneWay}" Grid.Row="4" Grid.RowSpan="2" RowSpacing="4" AutomationProperties.AutomationId="DraftBoardPanel">
                 <Grid.RowDefinitions><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /><RowDefinition Height="*" /></Grid.RowDefinitions>
                 <Grid ColumnSpacing="24"><Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions><TextBlock Text="Drafted picks" Style="{StaticResource SubtitleTextBlockStyle}" /><TextBlock Grid.Column="1" Text="{x:Bind ViewModel.AvailablePlayersTitle, Mode=OneWay}" Style="{StaticResource SubtitleTextBlockStyle}" /></Grid>
                 <Grid Grid.Row="1" ColumnSpacing="24">
@@ -99,14 +115,86 @@
                 </ListView>
                 <Border Grid.RowSpan="3" Width="1" HorizontalAlignment="Center" Background="{ThemeResource DividerStrokeColorDefaultBrush}" IsHitTestVisible="False" />
             </Grid>
-            <Grid x:Name="ResultsHeader" x:Load="{x:Bind ViewModel.IsStandardDataPage, Mode=OneWay}" Grid.Row="4" Padding="12,8" ColumnSpacing="16" AutomationProperties.AutomationId="ResultsHeader">
+            <Grid x:Name="MyTeamPanel" Visibility="{x:Bind local:MainPage.BoolToVisibility(ViewModel.IsMyTeamPage), Mode=OneWay}" Grid.Row="3" Grid.RowSpan="3" RowSpacing="12" AutomationProperties.AutomationId="MyTeamLineupPanel">
+                <Grid.RowDefinitions><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /><RowDefinition Height="*" /></Grid.RowDefinitions>
+                <Grid ColumnSpacing="12">
+                    <Grid.ColumnDefinitions><ColumnDefinition Width="Auto" /><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                    <ComboBox x:Name="LineupWeekSelector" AutomationProperties.AutomationId="LineupWeekSelector" Header="Week" ItemsSource="{x:Bind ViewModel.LineupWeeks, Mode=OneWay}" SelectedItem="{x:Bind ViewModel.SelectedLineupWeek, Mode=TwoWay}" SelectionChanged="LineupWeekSelector_SelectionChanged" MinWidth="120" />
+                    <TextBlock Grid.Column="1" VerticalAlignment="Bottom" Text="Choose one eligible player for every slot. Your other team players remain on the bench." TextWrapping="Wrap" Foreground="{ThemeResource AppSecondaryBrush}" />
+                    <Button Grid.Column="2" AutomationProperties.AutomationId="SubmitLineupButton" VerticalAlignment="Bottom" Command="{x:Bind ViewModel.SubmitLineupCommand}" Content="Submit lineup" IsEnabled="{x:Bind ViewModel.IsLineupEditable, Mode=OneWay}" />
+                </Grid>
+                <InfoBar Grid.Row="1" AutomationProperties.AutomationId="LineupLoadError" IsOpen="{x:Bind ViewModel.IsLineupErrorOpen, Mode=TwoWay}" Message="{x:Bind ViewModel.LineupError, Mode=OneWay}" Severity="Error" Title="Lineup unavailable" />
+                <Grid Grid.Row="2">
+                    <ScrollViewer AutomationProperties.AutomationId="MyTeamScrollViewer" VerticalScrollBarVisibility="Auto" VerticalScrollMode="Enabled">
+                        <StackPanel Spacing="24">
+                            <TextBlock Text="Player status could not be refreshed from MFL; showing saved status." Visibility="{x:Bind local:MainPage.BoolToVisibility(ViewModel.IsPlayerStatusStale), Mode=OneWay}" Foreground="{ThemeResource AppSecondaryBrush}" TextWrapping="Wrap" />
+                            <StackPanel Spacing="8">
+                                <TextBlock Text="Starting lineup" Style="{StaticResource SubtitleTextBlockStyle}" />
+                                <Grid Padding="12,4" ColumnSpacing="16">
+                                    <Grid.ColumnDefinitions><ColumnDefinition Width="120" /><ColumnDefinition Width="2*" /><ColumnDefinition Width="*" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions>
+                                    <TextBlock Text="Slot" Style="{StaticResource BodyStrongTextBlockStyle}" />
+                                    <TextBlock Grid.Column="1" Text="Player" Style="{StaticResource BodyStrongTextBlockStyle}" />
+                                    <TextBlock Grid.Column="2" Text="Position / NFL team" Style="{StaticResource BodyStrongTextBlockStyle}" />
+                                    <TextBlock Grid.Column="3" AutomationProperties.AutomationId="MyTeamStarterPointsHeader" Text="Current week points" Style="{StaticResource BodyStrongTextBlockStyle}" />
+                                </Grid>
+                                <ItemsControl ItemsSource="{x:Bind ViewModel.LineupSlots, Mode=OneWay}">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate x:DataType="viewModels:LineupSlotRow">
+                                            <Grid Padding="12,8" ColumnSpacing="16">
+                                                <Grid.ColumnDefinitions><ColumnDefinition Width="120" /><ColumnDefinition Width="2*" /><ColumnDefinition Width="*" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions>
+                                                <TextBlock VerticalAlignment="Center" Text="{x:Bind Label}" Style="{StaticResource BodyStrongTextBlockStyle}" />
+                                                <ComboBox Grid.Column="1" AutomationProperties.AutomationId="{x:Bind AutomationId}" AutomationProperties.Name="{x:Bind AccessibleName}" ItemsSource="{x:Bind EligiblePlayers}" SelectedItem="{x:Bind SelectedPlayer, Mode=TwoWay}" PlaceholderText="Choose a player" HorizontalAlignment="Stretch">
+                                                    <ComboBox.ItemTemplate>
+                                                        <DataTemplate x:DataType="viewModels:LineupPlayerOption">
+                                                            <views:PlayerNameBadge PlayerName="{x:Bind DisplayName, Mode=OneWay}" Status="{x:Bind StatusCode, Mode=OneWay}" IsStarter="{x:Bind IsStarter, Mode=OneWay}" />
+                                                        </DataTemplate>
+                                                    </ComboBox.ItemTemplate>
+                                                </ComboBox>
+                                                <TextBlock Grid.Column="2" VerticalAlignment="Center" Text="{x:Bind SelectedPlayer.Details, Mode=OneWay, FallbackValue='Not selected'}" Foreground="{ThemeResource AppSecondaryBrush}" />
+                                                <TextBlock Grid.Column="3" VerticalAlignment="Center" Text="{x:Bind SelectedPlayer.PointsText, Mode=OneWay, FallbackValue='—'}" />
+                                            </Grid>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </StackPanel>
+                            <StackPanel Spacing="8">
+                                <TextBlock Text="Bench" Style="{StaticResource SubtitleTextBlockStyle}" />
+                                <Grid Padding="12,4" ColumnSpacing="16">
+                                    <Grid.ColumnDefinitions><ColumnDefinition Width="2*" /><ColumnDefinition Width="56" /><ColumnDefinition Width="72" /><ColumnDefinition Width="*" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions>
+                                    <TextBlock Text="Player" Style="{StaticResource BodyStrongTextBlockStyle}" />
+                                    <TextBlock Grid.Column="1" Text="Position" Style="{StaticResource BodyStrongTextBlockStyle}" />
+                                    <TextBlock Grid.Column="2" Text="NFL team" Style="{StaticResource BodyStrongTextBlockStyle}" />
+                                    <TextBlock Grid.Column="3" Text="Roster status" Style="{StaticResource BodyStrongTextBlockStyle}" />
+                                    <TextBlock Grid.Column="4" AutomationProperties.AutomationId="MyTeamBenchPointsHeader" Text="Current week points" Style="{StaticResource BodyStrongTextBlockStyle}" />
+                                </Grid>
+                                <ItemsControl ItemsSource="{x:Bind ViewModel.BenchPlayers, Mode=OneWay}">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate x:DataType="viewModels:BenchPlayerRow">
+                                            <Grid Padding="12,8" ColumnSpacing="16">
+                                                <Grid.ColumnDefinitions><ColumnDefinition Width="2*" /><ColumnDefinition Width="56" /><ColumnDefinition Width="112" /><ColumnDefinition Width="72" /><ColumnDefinition Width="*" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions>
+                                                <views:PlayerNameBadge PlayerName="{x:Bind DisplayName, Mode=OneWay}" Status="{x:Bind StatusCode, Mode=OneWay}" />
+                                                <TextBlock Grid.Column="1" Text="{x:Bind Position}" />
+                                                <TextBlock Grid.Column="2" Text="{x:Bind NflTeam}" />
+                                                <TextBlock Grid.Column="3" Text="{x:Bind Status}" Foreground="{ThemeResource AppSecondaryBrush}" />
+                                                <TextBlock Grid.Column="4" Text="{x:Bind PointsText, Mode=OneWay}" />
+                                            </Grid>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </StackPanel>
+                        </StackPanel>
+                    </ScrollViewer>
+                    <ProgressRing HorizontalAlignment="Center" VerticalAlignment="Center" IsActive="{x:Bind ViewModel.IsLineupLoading, Mode=OneWay}" />
+                </Grid>
+            </Grid>
+            <Grid x:Name="ResultsHeader" Visibility="{x:Bind local:MainPage.BoolToVisibility(ViewModel.IsStandardDataPage), Mode=OneWay}" Grid.Row="4" Padding="12,8" ColumnSpacing="16" AutomationProperties.AutomationId="ResultsHeader">
                 <Grid.ColumnDefinitions><ColumnDefinition Width="2*" /><ColumnDefinition Width="2*" /><ColumnDefinition Width="*" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions>
                 <TextBlock Text="{x:Bind ViewModel.ResultsPrimaryHeader, Mode=OneWay}" FontWeight="SemiBold" />
                 <TextBlock Grid.Column="1" Text="{x:Bind ViewModel.ResultsSecondaryHeader, Mode=OneWay}" FontWeight="SemiBold" />
                 <TextBlock Grid.Column="2" Text="{x:Bind ViewModel.ResultsTertiaryHeader, Mode=OneWay}" FontWeight="SemiBold" />
                 <TextBlock Grid.Column="3" Text="{x:Bind ViewModel.ResultsStatusHeader, Mode=OneWay}" FontWeight="SemiBold" />
             </Grid>
-            <ListView x:Name="DataResults" x:Load="{x:Bind ViewModel.IsStandardDataPage, Mode=OneWay}" Grid.Row="5" AutomationProperties.AutomationId="CurrentPageResults" ItemsSource="{x:Bind ViewModel.Rows, Mode=OneWay}" ScrollViewer.VerticalScrollBarVisibility="Auto" SelectionMode="Single" ShowsScrollingPlaceholders="True">
+            <ListView x:Name="DataResults" Visibility="{x:Bind local:MainPage.BoolToVisibility(ViewModel.IsStandardDataPage), Mode=OneWay}" Grid.Row="5" AutomationProperties.AutomationId="CurrentPageResults" ItemsSource="{x:Bind ViewModel.Rows, Mode=OneWay}" ScrollViewer.VerticalScrollBarVisibility="Auto" SelectionMode="Single" ShowsScrollingPlaceholders="True">
                 <ListView.ItemTemplate>
                     <DataTemplate x:DataType="viewModels:DisplayRow">
                         <Grid Padding="12,8" ColumnSpacing="16">
@@ -119,25 +207,197 @@
                     </DataTemplate>
                 </ListView.ItemTemplate>
             </ListView>
-            <Grid x:Name="AgentPanel" x:Load="{x:Bind ViewModel.IsAgentPage, Mode=OneWay}" Grid.Row="3" Grid.RowSpan="3" ColumnSpacing="12" MinHeight="240">
-                <Grid.ColumnDefinitions><ColumnDefinition Width="2*" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions>
+            <Grid Grid.Row="4" Grid.RowSpan="2" Visibility="{x:Bind local:MainPage.BoolToVisibility(ViewModel.IsTransactionsPage), Mode=OneWay}" RowSpacing="8">
+                <Grid.RowDefinitions><RowDefinition Height="Auto" /><RowDefinition Height="*" /></Grid.RowDefinitions>
+                <Grid Padding="12,8" ColumnSpacing="16" AutomationProperties.AutomationId="TransactionsHeader">
+                    <Grid.ColumnDefinitions><ColumnDefinition Width="2*" /><ColumnDefinition Width="3*" /><ColumnDefinition Width="112" /><ColumnDefinition Width="180" /></Grid.ColumnDefinitions>
+                    <TextBlock Text="Team" Style="{StaticResource BodyStrongTextBlockStyle}" />
+                    <TextBlock Grid.Column="1" Text="Transaction" Style="{StaticResource BodyStrongTextBlockStyle}" />
+                    <TextBlock Grid.Column="2" Text="Bid amount" Style="{StaticResource BodyStrongTextBlockStyle}" />
+                    <TextBlock Grid.Column="3" Text="Date / time" Style="{StaticResource BodyStrongTextBlockStyle}" />
+                </Grid>
+                <ListView Grid.Row="1" AutomationProperties.AutomationId="TransactionsList" AutomationProperties.Name="League player transactions, newest first" ItemsSource="{x:Bind ViewModel.Rows, Mode=OneWay}" SelectionMode="None">
+                    <ListView.ItemContainerStyle><Style TargetType="ListViewItem"><Setter Property="HorizontalContentAlignment" Value="Stretch" /><Setter Property="Padding" Value="0" /></Style></ListView.ItemContainerStyle>
+                    <ListView.ItemTemplate>
+                        <DataTemplate x:DataType="viewModels:DisplayRow">
+                            <Grid Padding="12,8" ColumnSpacing="16">
+                                <Grid.ColumnDefinitions><ColumnDefinition Width="2*" /><ColumnDefinition Width="3*" /><ColumnDefinition Width="112" /><ColumnDefinition Width="180" /></Grid.ColumnDefinitions>
+                                <TextBlock Text="{x:Bind Primary, Mode=OneWay}" TextWrapping="Wrap" />
+                                <TextBlock Grid.Column="1" Text="{x:Bind Secondary, Mode=OneWay}" TextWrapping="Wrap" />
+                                <TextBlock Grid.Column="2" Text="{x:Bind Tertiary, Mode=OneWay}" />
+                                <TextBlock Grid.Column="3" Text="{x:Bind Status, Mode=OneWay}" TextWrapping="Wrap" />
+                            </Grid>
+                        </DataTemplate>
+                    </ListView.ItemTemplate>
+                </ListView>
+            </Grid>
+            <Grid x:Name="LeagueRankingsPanel" Visibility="{x:Bind local:MainPage.BoolToVisibility(ViewModel.IsLeagueRankingsPage), Mode=OneWay}" Grid.Row="3" Grid.RowSpan="3" AutomationProperties.AutomationId="LeagueRankingsPanel" RowSpacing="8">
+                <Grid.RowDefinitions><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /><RowDefinition Height="*" /></Grid.RowDefinitions>
+                <Grid ColumnSpacing="12">
+                    <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                    <TextBlock AutomationProperties.AutomationId="LeagueRankingsStatus" VerticalAlignment="Center" Foreground="{ThemeResource AppSecondaryBrush}" Text="{x:Bind ViewModel.LeagueRankingsStatus, Mode=OneWay}" TextWrapping="Wrap" />
+                    <ProgressRing Grid.Column="1" Width="24" Height="24" IsActive="{x:Bind ViewModel.IsLeagueRankingsLoading, Mode=OneWay}" />
+                    <Button Grid.Column="2" AutomationProperties.AutomationId="RefreshLeagueRankingsButton" AutomationProperties.Name="Refresh league rankings" Command="{x:Bind ViewModel.RefreshLeagueRankingsCommand}" Content="Refresh league rankings" IsEnabled="{x:Bind local:MainPage.IsNotBusy(ViewModel.IsLeagueRankingsLoading), Mode=OneWay}">
+                        <ToolTipService.ToolTip>
+                            <ToolTip Content="Refresh league rankings (Ctrl+R or F5)" Placement="Bottom" />
+                        </ToolTipService.ToolTip>
+                    </Button>
+                </Grid>
+                <Grid Grid.Row="1" Padding="12,8" ColumnSpacing="16" AutomationProperties.AutomationId="LeagueRankingsHeader">
+                    <Grid.ColumnDefinitions><ColumnDefinition Width="80" /><ColumnDefinition Width="2*" /><ColumnDefinition Width="*" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions>
+                    <TextBlock Text="Rank" Style="{StaticResource BodyStrongTextBlockStyle}" />
+                    <TextBlock Grid.Column="1" Text="Team" Style="{StaticResource BodyStrongTextBlockStyle}" />
+                    <TextBlock Grid.Column="2" Text="Current week points" Style="{StaticResource BodyStrongTextBlockStyle}" />
+                    <TextBlock Grid.Column="3" Text="Overall points" Style="{StaticResource BodyStrongTextBlockStyle}" />
+                </Grid>
+                <ListView Grid.Row="2" AutomationProperties.AutomationId="LeagueRankingsList" ItemsSource="{x:Bind ViewModel.LeagueRankingRows, Mode=OneWay}" SelectionChanged="LeagueRankingsList_SelectionChanged" SelectionMode="Single" ShowsScrollingPlaceholders="True">
+                    <ListView.ItemContainerStyle><Style TargetType="ListViewItem"><Setter Property="HorizontalContentAlignment" Value="Stretch" /></Style></ListView.ItemContainerStyle>
+                    <ListView.ItemTemplate>
+                        <DataTemplate x:DataType="application:LeagueRankingRow">
+                            <Grid AutomationProperties.Name="{x:Bind TeamDisplay, Mode=OneWay}">
+                                <Border Background="{ThemeResource SubtleFillColorSecondaryBrush}" CornerRadius="{StaticResource ControlCornerRadius}" Visibility="{x:Bind local:MainPage.BoolToVisibility(IsMyTeam), Mode=OneWay}" />
+                                <Grid Padding="12,8" ColumnSpacing="16">
+                                    <Grid.ColumnDefinitions><ColumnDefinition Width="80" /><ColumnDefinition Width="2*" /><ColumnDefinition Width="*" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions>
+                                    <TextBlock Text="{x:Bind RankText, Mode=OneWay}" Style="{StaticResource BodyStrongTextBlockStyle}" />
+                                    <TextBlock Grid.Column="1" Text="{x:Bind TeamDisplay, Mode=OneWay}" TextTrimming="CharacterEllipsis" />
+                                    <TextBlock Grid.Column="2" Text="{x:Bind CurrentWeekPointsText, Mode=OneWay}" />
+                                    <TextBlock Grid.Column="3" Text="{x:Bind OverallPointsText, Mode=OneWay}" />
+                                </Grid>
+                            </Grid>
+                        </DataTemplate>
+                    </ListView.ItemTemplate>
+                </ListView>
+            </Grid>
+            <views:TeamView x:Name="SelectedTeamView" Visibility="{x:Bind local:MainPage.BoolToVisibility(ViewModel.IsTeamViewPage), Mode=OneWay}" Grid.Row="3" Grid.RowSpan="3" AutomationProperties.AutomationId="TeamViewPanel" BackRequested="TeamView_BackRequested" />
+            <Grid x:Name="WaiversPanel" Visibility="{x:Bind local:MainPage.BoolToVisibility(ViewModel.IsWaiversPage), Mode=OneWay}" Grid.Row="3" Grid.RowSpan="3" ColumnSpacing="24" AutomationProperties.AutomationId="WaiversPanel">
+                <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions>
                 <Grid RowSpacing="8">
-                    <Grid.RowDefinitions><RowDefinition Height="Auto" /><RowDefinition Height="*" /><RowDefinition Height="Auto" /></Grid.RowDefinitions>
-                    <StackPanel Orientation="Horizontal" Spacing="8">
-                        <Button AutomationProperties.AutomationId="StartAgentButton" Command="{x:Bind ViewModel.StartAgentCommand}" Content="Start Luna" />
-                        <Button AutomationProperties.AutomationId="StopAgentButton" Command="{x:Bind ViewModel.StopAgentCommand}" Content="Stop" />
-                        <Button AutomationProperties.AutomationId="RestartAgentButton" Command="{x:Bind ViewModel.RestartAgentCommand}" Content="Restart" />
-                        <TextBlock Text="{x:Bind ViewModel.TerminalState, Mode=OneWay}" VerticalAlignment="Center" />
-                        <ToggleSwitch AutomationProperties.AutomationId="DraftAgentToggle" Header="Luna draft agent" IsOn="{x:Bind ViewModel.IsDraftAgentEnabled, Mode=TwoWay}" OffContent="Off" OnContent="On" />
+                    <Grid.RowDefinitions><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /><RowDefinition Height="*" /></Grid.RowDefinitions>
+                    <TextBlock Text="{x:Bind ViewModel.WaiversStatus, Mode=OneWay}" TextWrapping="Wrap" />
+                    <InfoBar Grid.Row="1" AutomationProperties.AutomationId="WaiverSubmissionError" IsOpen="{x:Bind ViewModel.IsWaiverErrorOpen, Mode=TwoWay}" Message="{x:Bind ViewModel.WaiverError, Mode=OneWay}" Severity="Error" Title="Waiver claim not submitted" />
+                    <Grid Grid.Row="2" Padding="12,8" ColumnSpacing="16">
+                        <Grid.ColumnDefinitions><ColumnDefinition Width="2*" /><ColumnDefinition Width="*" /><ColumnDefinition Width="*" /><ColumnDefinition Width="*" /><ColumnDefinition Width="120" /></Grid.ColumnDefinitions>
+                        <TextBlock Text="Pending player" Style="{StaticResource BodyStrongTextBlockStyle}" />
+                        <TextBlock Grid.Column="1" Text="Drop player" Style="{StaticResource BodyStrongTextBlockStyle}" />
+                        <TextBlock Grid.Column="2" Text="Bid amount" Style="{StaticResource BodyStrongTextBlockStyle}" />
+                        <TextBlock Grid.Column="3" AutomationProperties.AutomationId="WaiverProcessingDateHeader" Text="Processes" Style="{StaticResource BodyStrongTextBlockStyle}" />
+                    </Grid>
+                    <ListView Grid.Row="3" AutomationProperties.AutomationId="PendingWaiverClaims" AutomationProperties.Name="Pending waiver claims, drag to change priority" ItemsSource="{x:Bind ViewModel.PendingWaivers, Mode=OneWay}" SelectionMode="Single" CanDragItems="True" CanReorderItems="True" AllowDrop="True" DragItemsCompleted="PendingWaiverClaims_DragItemsCompleted">
+                        <ListView.ItemContainerStyle><Style TargetType="ListViewItem"><Setter Property="HorizontalContentAlignment" Value="Stretch" /></Style></ListView.ItemContainerStyle>
+                        <ListView.ItemTemplate><DataTemplate x:DataType="viewModels:PendingWaiverRow">
+                            <Grid Padding="12,8" ColumnSpacing="16" PointerEntered="PendingWaiverRow_PointerEntered" PointerExited="PendingWaiverRow_PointerExited">
+                                <Grid.ColumnDefinitions><ColumnDefinition Width="2*" /><ColumnDefinition Width="*" /><ColumnDefinition Width="*" /><ColumnDefinition Width="*" /><ColumnDefinition Width="120" /></Grid.ColumnDefinitions>
+                                <TextBlock Text="{x:Bind PlayerName, Mode=OneWay}" TextWrapping="Wrap" />
+                                <TextBlock Grid.Column="1" Text="{x:Bind DropPlayerName, Mode=OneWay}" Visibility="{x:Bind local:MainPage.InvertBoolToVisibility(IsEditing), Mode=OneWay}" TextWrapping="Wrap" />
+                                <ComboBox Grid.Column="1" AutomationProperties.AutomationId="EditWaiverDropPlayer" ItemsSource="{x:Bind DropOptions, Mode=OneWay}" DisplayMemberPath="DisplayName" SelectedItem="{x:Bind SelectedDropPlayer, Mode=TwoWay}" Visibility="{x:Bind local:MainPage.BoolToVisibility(IsEditing), Mode=OneWay}" HorizontalAlignment="Stretch" />
+                                <TextBlock Grid.Column="2" Text="{x:Bind BidAmount, Mode=OneWay}" Visibility="{x:Bind local:MainPage.InvertBoolToVisibility(IsEditing), Mode=OneWay}" />
+                                <TextBox Grid.Column="2" AutomationProperties.AutomationId="EditWaiverBidAmount" InputScope="Number" BeforeTextChanging="IntegerBid_BeforeTextChanging" Text="{x:Bind EditBidInput, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" Visibility="{x:Bind local:MainPage.BoolToVisibility(IsEditing), Mode=OneWay}" />
+                                <TextBlock Grid.Column="3" Text="{x:Bind ProcessingDate, Mode=OneWay}" TextWrapping="Wrap" />
+                                <StackPanel Grid.Column="4" Orientation="Horizontal" Spacing="4">
+                                    <Button Tag="HoverAction" AutomationProperties.AutomationId="EditWaiverClaim" Content="Edit" Opacity="0" Command="{x:Bind EditCommand}" Visibility="{x:Bind local:MainPage.InvertBoolToVisibility(IsEditing), Mode=OneWay}" GotFocus="PendingWaiverCancel_GotFocus" LostFocus="PendingWaiverCancel_LostFocus" />
+                                    <Button AutomationProperties.AutomationId="SaveWaiverClaim" Content="Save" Command="{x:Bind SaveCommand}" Visibility="{x:Bind local:MainPage.BoolToVisibility(IsEditing), Mode=OneWay}" />
+                                    <Button x:Name="CancelWaiverButton" Tag="HoverAction" AutomationProperties.AutomationId="{x:Bind CancelAutomationId, Mode=OneWay}" AutomationProperties.Name="{x:Bind CancelAccessibleName, Mode=OneWay}" Width="32" Height="32" MinWidth="32" MinHeight="32" Padding="4" Opacity="0" Command="{x:Bind CancelCommand}" CommandParameter="{x:Bind Claim, Mode=OneWay}" Visibility="{x:Bind local:MainPage.InvertBoolToVisibility(IsEditing), Mode=OneWay}" GotFocus="PendingWaiverCancel_GotFocus" LostFocus="PendingWaiverCancel_LostFocus" ToolTipService.ToolTip="Cancel waiver claim">
+                                        <Image Width="20" Height="20" Source="/Assets/TrashIcon.jpg" Stretch="Uniform" />
+                                    </Button>
+                                    <Button AutomationProperties.AutomationId="CancelWaiverEdit" Content="Cancel" Command="{x:Bind CancelEditCommand}" Visibility="{x:Bind local:MainPage.BoolToVisibility(IsEditing), Mode=OneWay}" />
+                                </StackPanel>
+                            </Grid>
+                        </DataTemplate></ListView.ItemTemplate>
+                    </ListView>
+                </Grid>
+                <Grid Grid.Column="1" RowSpacing="8">
+                    <Grid.RowDefinitions><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /><RowDefinition Height="*" /><RowDefinition Height="Auto" /></Grid.RowDefinitions>
+                    <TextBlock Text="{x:Bind ViewModel.WaiverPlayersStatus, Mode=OneWay}" TextWrapping="Wrap" />
+                    <Grid Grid.Row="1" Padding="12,8" ColumnSpacing="16">
+                        <Grid.ColumnDefinitions><ColumnDefinition Width="2*" /><ColumnDefinition Width="*" /><ColumnDefinition Width="80" /><ColumnDefinition Width="80" /></Grid.ColumnDefinitions>
+                        <TextBlock Text="Available player" Style="{StaticResource BodyStrongTextBlockStyle}" />
+                        <TextBlock Grid.Column="1" Text="Position rank" Style="{StaticResource BodyStrongTextBlockStyle}" />
+                        <TextBlock AutomationProperties.AutomationId="WaiverCopiesHeader" Grid.Column="2" Text="Copies" Style="{StaticResource BodyStrongTextBlockStyle}" />
+                        <TextBlock AutomationProperties.AutomationId="WaiverSeasonPointsHeader" Grid.Column="3" Text="YTD points" Style="{StaticResource BodyStrongTextBlockStyle}" />
+                    </Grid>
+                    <ListView Grid.Row="2" AutomationProperties.AutomationId="RankedWaiverPlayers" ItemsSource="{x:Bind ViewModel.WaiverPlayers, Mode=OneWay}" SelectedItem="{x:Bind ViewModel.SelectedWaiverPlayer, Mode=TwoWay}" SelectionMode="Single">
+                        <ListView.ItemContainerStyle><Style TargetType="ListViewItem"><Setter Property="HorizontalContentAlignment" Value="Stretch" /></Style></ListView.ItemContainerStyle>
+                        <ListView.ItemTemplate><DataTemplate x:DataType="application:RankedWaiverPlayer">
+                            <Grid Padding="12,8" ColumnSpacing="16">
+                                <Grid.ColumnDefinitions><ColumnDefinition Width="2*" /><ColumnDefinition Width="*" /><ColumnDefinition Width="80" /><ColumnDefinition Width="80" /></Grid.ColumnDefinitions>
+                                <TextBlock Text="{x:Bind DisplayName, Mode=OneWay}" TextWrapping="Wrap" />
+                                <TextBlock Grid.Column="1" Text="{x:Bind PositionRank, Mode=OneWay}" />
+                                <TextBlock Grid.Column="2" Text="{x:Bind CopiesText, Mode=OneWay}" />
+                                <TextBlock Grid.Column="3" Text="{x:Bind SeasonPointsText, Mode=OneWay}" />
+                            </Grid>
+                        </DataTemplate></ListView.ItemTemplate>
+                    </ListView>
+                    <StackPanel Grid.Row="3" Spacing="8">
+                        <ComboBox AutomationProperties.AutomationId="WaiverAddPlayer" Header="Player to claim" ItemsSource="{x:Bind ViewModel.WaiverClaimPlayers, Mode=OneWay}" DisplayMemberPath="DisplayName" SelectedItem="{x:Bind ViewModel.SelectedWaiverAddPlayer, Mode=TwoWay}" HorizontalAlignment="Stretch" />
+                        <TextBox AutomationProperties.AutomationId="WaiverBidAmount" Header="Bid amount ($)" InputScope="Number" BeforeTextChanging="IntegerBid_BeforeTextChanging" Text="{x:Bind ViewModel.WaiverBidInput, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+                        <ComboBox AutomationProperties.AutomationId="WaiverDropPlayer" Header="Drop player" ItemsSource="{x:Bind ViewModel.WaiverDropPlayers, Mode=OneWay}" DisplayMemberPath="DisplayName" SelectedItem="{x:Bind ViewModel.SelectedWaiverDropPlayer, Mode=TwoWay}" HorizontalAlignment="Stretch" />
+                        <Button AutomationProperties.AutomationId="SubmitWaiverBid" Content="Review and submit bid" Command="{x:Bind ViewModel.SubmitWaiverCommand}" IsEnabled="{x:Bind local:MainPage.IsNotBusy(ViewModel.IsBusy), Mode=OneWay}" />
                     </StackPanel>
-                    <TextBox Grid.Row="1" AutomationProperties.AutomationId="CodexTerminal" AcceptsReturn="True" FontFamily="Cascadia Mono" IsReadOnly="True" Text="{x:Bind ViewModel.TerminalText, Mode=OneWay}" ScrollViewer.VerticalScrollBarVisibility="Auto" />
+                </Grid>
+            </Grid>
+            <Grid x:Name="AgentPanel" Visibility="{x:Bind local:MainPage.BoolToVisibility(ViewModel.IsAgentPage), Mode=OneWay}" Grid.Row="3" Grid.RowSpan="3" ColumnSpacing="12" MinHeight="240">
+                <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="280" /></Grid.ColumnDefinitions>
+                <Grid RowSpacing="16">
+                    <Grid.RowDefinitions><RowDefinition Height="Auto" /><RowDefinition Height="*" /><RowDefinition Height="Auto" /></Grid.RowDefinitions>
+                    <Grid ColumnSpacing="12">
+                        <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
+                        <StackPanel Spacing="4">
+                            <TextBlock Text="Luna" Style="{StaticResource SubtitleTextBlockStyle}" />
+                            <TextBlock Text="Your league. This week’s information. Clear recommendations." Foreground="{ThemeResource TextFillColorSecondaryBrush}" TextWrapping="Wrap" />
+                        </StackPanel>
+                        <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                            <ProgressRing Width="20" Height="20" IsActive="{x:Bind ViewModel.IsAgentWorking, Mode=OneWay}" Visibility="{x:Bind local:MainPage.BoolToVisibility(ViewModel.IsAgentWorking), Mode=OneWay}" />
+                            <TextBlock AutomationProperties.AutomationId="LunaState" Text="{x:Bind ViewModel.TerminalState, Mode=OneWay}" VerticalAlignment="Center" />
+                            <Button AutomationProperties.AutomationId="ClearAgentConversationButton" AutomationProperties.Name="Clear Luna conversation" Content="Clear conversation" Command="{x:Bind ViewModel.ClearAgentConversationCommand}" IsEnabled="{x:Bind local:MainPage.IsNotBusy(ViewModel.IsAgentWorking), Mode=OneWay}" />
+                        </StackPanel>
+                    </Grid>
+                    <Border Grid.Row="1" Background="{ThemeResource CardBackgroundFillColorDefaultBrush}" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" BorderThickness="1" CornerRadius="{StaticResource ControlCornerRadius}" Padding="8">
+                        <ListView x:Name="AgentChat" AutomationProperties.AutomationId="CodexTerminal" AutomationProperties.Name="Luna conversation" ItemsSource="{x:Bind ViewModel.AgentMessages}" SelectionMode="None" IsItemClickEnabled="False">
+                            <ListView.ItemContainerStyle><Style TargetType="ListViewItem"><Setter Property="HorizontalContentAlignment" Value="Stretch" /><Setter Property="Padding" Value="8,12" /></Style></ListView.ItemContainerStyle>
+                            <ListView.ItemTemplate>
+                                <DataTemplate x:DataType="viewModels:AgentChatMessage">
+                                    <StackPanel Spacing="6">
+                                        <TextBlock Text="{x:Bind Role}" Style="{StaticResource BodyStrongTextBlockStyle}" />
+                                        <TextBlock Text="{x:Bind Text}" TextWrapping="Wrap" IsTextSelectionEnabled="True" Style="{StaticResource BodyTextBlockStyle}" />
+                                    </StackPanel>
+                                </DataTemplate>
+                            </ListView.ItemTemplate>
+                        </ListView>
+                    </Border>
                     <Grid Grid.Row="2" ColumnSpacing="8">
                         <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>
-                        <TextBox x:Name="TerminalInput" AutomationProperties.AutomationId="CodexTerminalInput" AutomationProperties.Name="Codex terminal input" PlaceholderText="Send a prompt to Codex Luna" KeyDown="TerminalInput_KeyDown" />
-                        <Button Grid.Column="1" AutomationProperties.AutomationId="SendTerminalInput" Content="Send" Click="SendTerminalInput_Click" />
+                        <TextBox x:Name="TerminalInput" AutomationProperties.AutomationId="CodexTerminalInput" AutomationProperties.Name="Message Luna" PlaceholderText="Ask Luna about your team…" AcceptsReturn="True" TextWrapping="Wrap" MinHeight="64" MaxHeight="140" KeyDown="TerminalInput_KeyDown" IsEnabled="{x:Bind local:MainPage.IsNotBusy(ViewModel.IsAgentWorking), Mode=OneWay}" />
+                        <Button Grid.Column="1" AutomationProperties.AutomationId="SendTerminalInput" Content="Send" Style="{StaticResource AccentButtonStyle}" VerticalAlignment="Bottom" Click="SendTerminalInput_Click" IsEnabled="{x:Bind local:MainPage.IsNotBusy(ViewModel.IsAgentWorking), Mode=OneWay}" />
                     </Grid>
                 </Grid>
-                <ListView Grid.Column="1" AutomationProperties.AutomationId="AgentActionHistory" ItemsSource="{x:Bind ViewModel.AgentHistory, Mode=OneWay}" />
+                <Border Grid.Column="1" Background="{ThemeResource CardBackgroundFillColorDefaultBrush}" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" BorderThickness="1" CornerRadius="{StaticResource ControlCornerRadius}" Padding="16">
+                    <Grid RowSpacing="12">
+                        <Grid.RowDefinitions><RowDefinition Height="Auto" /><RowDefinition Height="*" /></Grid.RowDefinitions>
+                        <StackPanel Spacing="12">
+                        <TextBlock Text="Connection" Style="{StaticResource BodyStrongTextBlockStyle}" />
+                        <TextBlock Text="{x:Bind ViewModel.CodexAccountStatus, Mode=OneWay}" Style="{StaticResource CaptionTextBlockStyle}" TextWrapping="Wrap" />
+                        <Button AutomationProperties.AutomationId="StartAgentButton" Command="{x:Bind ViewModel.StartAgentCommand}" Content="Start Luna" HorizontalAlignment="Stretch" />
+                        <Button AutomationProperties.AutomationId="CodexSignInButton" Command="{x:Bind ViewModel.SignInToCodexCommand}" Content="Sign in with ChatGPT" Visibility="{x:Bind local:MainPage.InvertBoolToVisibility(ViewModel.IsCodexAuthenticated), Mode=OneWay}" />
+                        <Button AutomationProperties.AutomationId="CodexSignOutButton" Command="{x:Bind ViewModel.SignOutOfCodexCommand}" Content="Sign out" Visibility="{x:Bind local:MainPage.BoolToVisibility(ViewModel.IsCodexAuthenticated), Mode=OneWay}" />
+                        <Button AutomationProperties.AutomationId="CodexAccountRefreshButton" AutomationProperties.Name="Refresh Codex account status" Command="{x:Bind ViewModel.CheckCodexAccountCommand}" Content="Refresh account" />
+                        <Button AutomationProperties.AutomationId="StopAgentButton" Command="{x:Bind ViewModel.StopAgentCommand}" Content="Stop" />
+                        <Button AutomationProperties.AutomationId="RestartAgentButton" Command="{x:Bind ViewModel.RestartAgentCommand}" Content="Restart" />
+                        <ToggleSwitch AutomationProperties.AutomationId="DraftAgentToggle" Header="Automatic draft advice" IsOn="{x:Bind ViewModel.IsDraftAgentEnabled, Mode=TwoWay}" OffContent="Off" OnContent="On" />
+                        <TextBlock Text="Off by default. Turning it off cancels draft advice in progress. Picks are never submitted automatically." Style="{StaticResource CaptionTextBlockStyle}" Foreground="{ThemeResource TextFillColorSecondaryBrush}" TextWrapping="Wrap" />
+                        <TextBlock Text="League action history" Style="{StaticResource BodyStrongTextBlockStyle}" />
+                        </StackPanel>
+                        <ListView Grid.Row="1" AutomationProperties.AutomationId="AgentActionHistory" ItemsSource="{x:Bind ViewModel.AgentHistory, Mode=OneWay}" SelectionMode="None">
+                            <ListView.ItemTemplate>
+                                <DataTemplate x:DataType="domain:OperationJournalEntry">
+                                    <StackPanel Spacing="4" Padding="0,8">
+                                        <TextBlock Text="{x:Bind Operation}" Style="{StaticResource BodyStrongTextBlockStyle}" />
+                                        <TextBlock Text="{x:Bind Result}" TextWrapping="Wrap" Style="{StaticResource CaptionTextBlockStyle}" />
+                                    </StackPanel>
+                                </DataTemplate>
+                            </ListView.ItemTemplate>
+                        </ListView>
+                    </Grid>
+                </Border>
             </Grid>
             <Grid Grid.Row="6" ColumnSpacing="8">
                 <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="Auto" /></Grid.ColumnDefinitions>

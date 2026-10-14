@@ -6,6 +6,9 @@ public enum MutationKind
     AddDrop,
     SubmitWaivers,
     SubmitBlindBids,
+    CancelWaiverClaim,
+    ReorderWaiverClaims,
+    EditWaiverClaim,
     MoveToInjuredReserve,
     MoveFromInjuredReserve,
     PromoteTaxiPlayer,
@@ -69,6 +72,39 @@ public sealed record WaiverMutation(IReadOnlyList<WaiverClaim> Claims, bool Blin
             ["REPLACE"] = Append ? "0" : "1"
         };
     }
+}
+
+public sealed record CancelWaiverClaimMutation(
+    WaiverClaim Claim,
+    IReadOnlyList<WaiverClaim> RemainingClaims,
+    bool BlindBid,
+    int Round)
+    : MflMutation(MutationKind.CancelWaiverClaim)
+{
+    public override IReadOnlyDictionary<string, string> ToParameters() =>
+        new WaiverMutation(RemainingClaims, BlindBid, false, Round).ToParameters();
+}
+
+public sealed record ReorderWaiverClaimsMutation(
+    IReadOnlyList<WaiverClaim> OriginalOrder,
+    IReadOnlyList<WaiverClaim> DesiredOrder,
+    bool BlindBid,
+    int Round)
+    : MflMutation(MutationKind.ReorderWaiverClaims)
+{
+    public override IReadOnlyDictionary<string, string> ToParameters() =>
+        new WaiverMutation(DesiredOrder.Select((claim, index) => claim with { Priority = index + 1 }).ToArray(),
+            BlindBid, false, Round).ToParameters();
+}
+
+public sealed record EditWaiverClaimMutation(
+    IReadOnlyList<WaiverClaim> OriginalOrder,
+    IReadOnlyList<WaiverClaim> DesiredOrder,
+    int Round)
+    : MflMutation(MutationKind.EditWaiverClaim)
+{
+    public override IReadOnlyDictionary<string, string> ToParameters() =>
+        new WaiverMutation(DesiredOrder, true, false, Round).ToParameters();
 }
 
 public sealed record PlayerListMutation(MutationKind MutationKind, string ImportType, IReadOnlyList<string> PlayerIds)

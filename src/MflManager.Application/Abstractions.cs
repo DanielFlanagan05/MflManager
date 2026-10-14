@@ -38,6 +38,14 @@ public interface IMflExportClient
     Task<MflResult<string>> ExportAsync(LeagueContext league, string requestType, IReadOnlyDictionary<string, string>? parameters, CancellationToken cancellationToken);
 }
 
+public sealed record WaiverSupplementalData(decimal? FaabBalance, bool BalanceLoaded,
+    IReadOnlyDictionary<string, decimal> SeasonPlayerPoints, bool PointsLoaded);
+
+public interface IMflWaiverDataService
+{
+    Task<WaiverSupplementalData> GetAsync(LeagueContext league, CancellationToken cancellationToken);
+}
+
 public interface IMflImportClient
 {
     Task<MflResult<string>> ImportAsync(LeagueContext league, IReadOnlyDictionary<string, string> parameters, CancellationToken cancellationToken);
@@ -102,6 +110,31 @@ public interface IMflRefreshService
 {
     event EventHandler<LeagueSnapshot>? SnapshotUpdated;
     Task<RefreshReport> RefreshAllAsync(LeagueContext league, RefreshReason reason, CancellationToken cancellationToken);
+    Task<bool> RefreshPlayerStatusesAsync(LeagueContext league, CancellationToken cancellationToken);
+}
+
+public interface IMflLineupQueryService
+{
+    Task<MflResult<WeeklyLineup>> GetAsync(LeagueContext league, int week, IReadOnlyList<string> rosterPlayerIds,
+        CancellationToken cancellationToken, string? weeklyResultsBody = null);
+    Task<MflResult<IReadOnlyList<PlayerRosterAvailability>>> GetAvailabilityAsync(
+        LeagueContext league, int week, IReadOnlyList<string> playerIds, CancellationToken cancellationToken);
+}
+
+public interface ILeagueRankingsService
+{
+    Task<MflResult<LeagueRankingData>> GetAsync(
+        LeagueContext league, int fallbackWeek, CancellationToken cancellationToken);
+}
+
+public interface ITeamViewService
+{
+    Task<MflResult<TeamViewData>> GetAsync(
+        LeagueContext league,
+        string franchiseId,
+        int fallbackWeek,
+        IReadOnlyDictionary<string, Player> players,
+        CancellationToken cancellationToken);
 }
 
 public interface IMflMutationCoordinator
