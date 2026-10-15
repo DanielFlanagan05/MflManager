@@ -1,5 +1,7 @@
 using System.Collections.ObjectModel;
+using System.ComponentModel;
 using System.Globalization;
+using System.Runtime.CompilerServices;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using MflManager.App;
@@ -11,7 +13,66 @@ using Microsoft.Extensions.Logging;
 namespace MflManager.App.ViewModels;
 
 public sealed record DisplayRow(string Primary, string Secondary, string Tertiary, string Status);
-public sealed record AgentChatMessage(string Role, string Text);
+public sealed record AgentProgressUpdate(string Text);
+public sealed record AgentChatMessage(string Role, string Text) : INotifyPropertyChanged
+{
+    private static int _nextProgressAutomationId;
+    private const int MaxProgressUpdates = 12;
+    private string _progressHeader = string.Empty;
+
+    public event PropertyChangedEventHandler? PropertyChanged;
+    public bool IsProgress { get; private init; }
+    public string ProgressAutomationId { get; } = $"LunaProgressDetails{Interlocked.Increment(ref _nextProgressAutomationId)}";
+    public string ProgressHeader
+    {
+        get => _progressHeader;
+        private set
+        {
+            if (_progressHeader == value) return;
+            _progressHeader = value;
+            OnPropertyChanged();
+        }
+    }
+    public ObservableCollection<AgentProgressUpdate> ProgressUpdates { get; } = [];
+
+    public static AgentChatMessage CreateProgress()
+    {
+        var message = new AgentChatMessage("Luna", string.Empty) { IsProgress = true };
+        message.AddProgress("Reviewing your question");
+        return message;
+    }
+
+    public void AddProgress(string text)
+    {
+        if (!IsProgress || string.IsNullOrWhiteSpace(text)) return;
+        text = text.Trim();
+        if (ProgressUpdates.LastOrDefault()?.Text.Equals(text, StringComparison.Ordinal) == true) return;
+
+        if (ProgressUpdates.Count >= MaxProgressUpdates)
+        {
+            const string moreUpdates = "Continuing with additional checks";
+            if (ProgressUpdates[^1].Text == moreUpdates) return;
+            ProgressUpdates[^1] = new AgentProgressUpdate(moreUpdates);
+            ProgressHeader = $"Luna is working · {moreUpdates}";
+            return;
+        }
+
+        ProgressUpdates.Add(new AgentProgressUpdate(text));
+        ProgressHeader = $"Luna is working · {text}";
+    }
+
+    public void CompleteProgress(string? outcome = null)
+    {
+        if (!IsProgress) return;
+        if (!string.IsNullOrWhiteSpace(outcome)) AddProgress(outcome);
+        ProgressHeader = string.IsNullOrWhiteSpace(outcome)
+            ? $"Response ready · {ProgressUpdates.Count} updates"
+            : outcome;
+    }
+
+    private void OnPropertyChanged([CallerMemberName] string? propertyName = null) =>
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+}
 public sealed record DraftQueueRow(int Order, string PlayerName, string Position, string Team);
 public sealed record BenchPlayerRow(string DisplayName, string Position, string NflTeam, string Status, decimal? Points = null, string StatusCode = "")
 {
@@ -87,6 +148,7 @@ public partial class MainPageViewModel : ObservableObject
     private readonly ILogger<MainPageViewModel> _logger;
     private int _lastAgentPromptOverall;
     private volatile int _agentConversationVersion;
+    private AgentChatMessage? _currentAgentProgress;
     private readonly DraftAdviceSession _draftAdvice = new();
     private string _pageTag = "Dashboard";
     private readonly List<string> _draftQueueIds = [];
@@ -206,6 +268,11 @@ public partial class MainPageViewModel : ObservableObject
             {
                 if (version != _agentConversationVersion) return;
                 TerminalText += output.Text;
+                if (output.IsProgress)
+                {
+                    _currentAgentProgress?.AddProgress(output.Text);
+                    return;
+                }
                 AgentMessages.Add(new(output.IsError ? "Connection issue" : "Luna", output.Text.Trim()));
             });
         };
@@ -437,26 +504,40 @@ public partial class MainPageViewModel : ObservableObject
     {
         if (string.IsNullOrWhiteSpace(text) || IsAgentWorking) return;
         IsAgentWorking = true;
+        var responseCompleted = false;
+        string? progressOutcome = null;
         try
         {
             cancellationToken.ThrowIfCancellationRequested();
+            AgentMessages.Add(new("You", text.Trim()));
+            _currentAgentProgress = AgentChatMessage.CreateProgress();
+            AgentMessages.Add(_currentAgentProgress);
             if (_terminal.State is TerminalConnectionState.Stopped or TerminalConnectionState.Faulted)
                 await _terminal.StartAsync(FindRepositoryRoot(), "mfl-manager-agent", cancellationToken);
             cancellationToken.ThrowIfCancellationRequested();
-            AgentMessages.Add(new("You", text.Trim()));
             var snapshot = _state.CurrentSnapshot;
             var context = LunaPrompt.Context(DateTimeOffset.UtcNow, _state.SelectedLeague?.LeagueId,
                 _state.SelectedLeague?.Season.Year, snapshot is null ? null : LineupRules.ActiveWeek(snapshot), IsDraftAgentEnabled);
             await _terminal.WriteAsync(context + "\n\nUser request: " + text, cancellationToken);
+            responseCompleted = true;
         }
-        catch (OperationCanceledException) { }
+        catch (OperationCanceledException)
+        {
+            progressOutcome = "Request stopped";
+        }
         catch (Exception ex) when (ex is InvalidOperationException or System.ComponentModel.Win32Exception)
         {
+            progressOutcome = "Luna could not complete this request";
             StatusMessage = ex.Message;
             IsStatusOpen = true;
             AgentMessages.Add(new("Connection issue", ex.Message));
         }
-        finally { IsAgentWorking = false; }
+        finally
+        {
+            _currentAgentProgress?.CompleteProgress(responseCompleted ? null : progressOutcome ?? "Request ended before a response was ready");
+            _currentAgentProgress = null;
+            IsAgentWorking = false;
+        }
     }
 
     partial void OnIsDraftAgentEnabledChanged(bool value)

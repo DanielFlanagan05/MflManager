@@ -356,10 +356,24 @@
                             <ListView.ItemContainerStyle><Style TargetType="ListViewItem"><Setter Property="HorizontalContentAlignment" Value="Stretch" /><Setter Property="Padding" Value="8,12" /></Style></ListView.ItemContainerStyle>
                             <ListView.ItemTemplate>
                                 <DataTemplate x:DataType="viewModels:AgentChatMessage">
-                                    <StackPanel Spacing="6">
-                                        <TextBlock Text="{x:Bind Role}" Style="{StaticResource BodyStrongTextBlockStyle}" />
-                                        <TextBlock Text="{x:Bind Text}" TextWrapping="Wrap" IsTextSelectionEnabled="True" Style="{StaticResource BodyTextBlockStyle}" />
-                                    </StackPanel>
+                                    <Grid>
+                                        <StackPanel Spacing="6" Visibility="{x:Bind local:MainPage.InvertBoolToVisibility(IsProgress), Mode=OneWay}">
+                                            <TextBlock Text="{x:Bind Role}" Style="{StaticResource BodyStrongTextBlockStyle}" />
+                                            <TextBlock Text="{x:Bind Text}" TextWrapping="Wrap" IsTextSelectionEnabled="True" Style="{StaticResource BodyTextBlockStyle}" />
+                                        </StackPanel>
+                                        <Expander AutomationProperties.AutomationId="{x:Bind ProgressAutomationId, Mode=OneWay}" AutomationProperties.Name="Luna progress updates" IsExpanded="False" HorizontalAlignment="Stretch" Visibility="{x:Bind local:MainPage.BoolToVisibility(IsProgress), Mode=OneWay}">
+                                            <Expander.Header>
+                                                <TextBlock Text="{x:Bind ProgressHeader, Mode=OneWay}" Style="{StaticResource BodyStrongTextBlockStyle}" TextWrapping="Wrap" />
+                                            </Expander.Header>
+                                            <ItemsControl ItemsSource="{x:Bind ProgressUpdates, Mode=OneWay}" Margin="0,8,0,0">
+                                                <ItemsControl.ItemTemplate>
+                                                    <DataTemplate x:DataType="viewModels:AgentProgressUpdate">
+                                                        <TextBlock Text="{x:Bind Text}" TextWrapping="Wrap" Margin="0,0,0,4" />
+                                                    </DataTemplate>
+                                                </ItemsControl.ItemTemplate>
+                                            </ItemsControl>
+                                        </Expander>
+                                    </Grid>
                                 </DataTemplate>
                             </ListView.ItemTemplate>
                         </ListView>

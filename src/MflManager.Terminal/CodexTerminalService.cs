@@ -7,7 +7,7 @@ namespace MflManager.Terminal;
 
 public enum TerminalConnectionState { Stopped, Starting, Connected, Working, Faulted }
 
-public sealed record TerminalOutput(string Text, bool IsError, DateTimeOffset Timestamp);
+public sealed record TerminalOutput(string Text, bool IsError, DateTimeOffset Timestamp, bool IsProgress = false);
 public sealed record CodexCliStatus(
     bool IsInstalled,
     bool IsAuthenticated,
@@ -272,6 +272,11 @@ public sealed class CodexTerminalService : ICodexTerminalService
             var type = root.TryGetProperty("type", out var typeValue) ? typeValue.GetString() : null;
             if (type == "thread.started" && root.TryGetProperty("thread_id", out var thread))
                 _threadId = thread.GetString();
+            else if (type == "item.started" && root.TryGetProperty("item", out var startedItem))
+            {
+                var progress = SummarizeProgress(startedItem);
+                if (progress is not null) PublishProgress(progress);
+            }
             else if (type == "item.completed" && root.TryGetProperty("item", out var item) &&
                      item.TryGetProperty("type", out var itemType) && itemType.GetString() == "agent_message" &&
                      item.TryGetProperty("text", out var text))
@@ -280,6 +285,7 @@ public sealed class CodexTerminalService : ICodexTerminalService
             {
                 // Agent messages can include routine tool-use preambles. Show only
                 // the completed answer, keeping this advisory chat concise.
+                PublishProgress("Response ready");
                 Publish(_pendingMessage, false);
                 _pendingMessage = null;
             }
@@ -288,6 +294,44 @@ public sealed class CodexTerminalService : ICodexTerminalService
         }
         catch (JsonException) { Publish(line + Environment.NewLine, false); }
     }
+
+    private static string? SummarizeProgress(JsonElement item)
+    {
+        if (!item.TryGetProperty("type", out var itemType) || itemType.ValueKind != JsonValueKind.String)
+            return null;
+
+        return itemType.GetString() switch
+        {
+            "mcp_tool_call" => SummarizeToolCall(item),
+            "web_search_call" => "Checking current player news and sources",
+            "command_execution" => "Gathering information for the answer",
+            "agent_message" => "Preparing a recommendation",
+            _ => null
+        };
+    }
+
+    private static string SummarizeToolCall(JsonElement item)
+    {
+        var tool = ReadStringProperty(item, "tool") ?? ReadStringProperty(item, "name");
+        if (tool is null || !tool.StartsWith("mfl_", StringComparison.Ordinal))
+            return "Checking connected information";
+
+        return tool switch
+        {
+            "mfl_get_team_needs" or "mfl_get_rankings" => "Comparing rankings and team needs",
+            "mfl_get_roster" or "mfl_get_lineup" => "Reviewing your roster and lineup",
+            "mfl_get_dashboard" or "mfl_get_league_settings" => "Checking your league setup",
+            "mfl_get_standings" or "mfl_get_matchups" => "Checking standings and matchups",
+            "mfl_search_players" or "mfl_get_free_agents" => "Looking up players",
+            "mfl_get_draft_state" => "Checking draft status",
+            _ => "Checking league data"
+        };
+    }
+
+    private static string? ReadStringProperty(JsonElement element, string propertyName) =>
+        element.TryGetProperty(propertyName, out var value) && value.ValueKind == JsonValueKind.String
+            ? value.GetString()
+            : null;
 
     private static string? FindExecutable()
     {
@@ -424,6 +468,9 @@ public sealed class CodexTerminalService : ICodexTerminalService
     {
         if (!string.IsNullOrEmpty(text)) OutputReceived?.Invoke(this, new TerminalOutput(text, error, DateTimeOffset.UtcNow));
     }
+
+    private void PublishProgress(string text) =>
+        OutputReceived?.Invoke(this, new TerminalOutput(text, false, DateTimeOffset.UtcNow, IsProgress: true));
 
     private void SetState(TerminalConnectionState state) { State = state; StateChanged?.Invoke(this, state); }
     public async ValueTask DisposeAsync() { await StopAsync(CancellationToken.None).ConfigureAwait(false); _gate.Dispose(); }
